@@ -2,6 +2,8 @@
 const firebaseConfig = {
   apiKey: "AIzaSyBp0qvL9DzymRYNGcddUXeSrDDyWxSxal0",
   authDomain: "yks-kocum-d884b.firebaseapp.com",
+  // EKLENEN SATIR: Avrupa bölgesi veritabanı adresi
+  databaseURL: "https://yks-kocum-d884b-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "yks-kocum-d884b",
   storageBucket: "yks-kocum-d884b.firebasestorage.app",
   messagingSenderId: "350673528928",
@@ -12,6 +14,5 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const DB = firebase.database();
 
-// Geçerli öğrenci ID'si (Öğrenci panelinde sabit, koç panelinde dinamik olacak)
 let currentStudentId = localStorage.getItem('activeStudentId') || "kagan"; 
 const dbRef = (path) => DB.ref(`students/${currentStudentId}/${path}`);
