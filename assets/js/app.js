@@ -474,7 +474,10 @@ async function draftWithAI() {
       body: JSON.stringify({ prompt: prompt })
     });
 
-    if (!res.ok) throw new Error('Sunucu hatası.');
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.details || 'Sunucu hatası.');
+    }
 
     const data = await res.json();
     const txt = data.candidates[0].content.parts[0].text.trim();
