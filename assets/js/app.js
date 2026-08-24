@@ -382,7 +382,14 @@ function initializeFirebaseListeners() {
     buildWeekly(Number(sel ? sel.value : 0)); 
     renderCoachHome();
   });
-  dbRef('messages').on('value', snap => {messagesCache = snapToList(snap); renderSent(); renderInbox();});
+  dbRef('messages').on('value', snap => {
+    console.log("Firebase 'messages' verisi geldi!"); 
+    messagesCache = snapToList(snap); 
+    renderSent(); 
+    renderInbox();
+  }, (error) => {
+    console.error("Firebase messages okuma hatası:", error);
+  });
 }
 
 /* ---- Öğrenci Fonksiyonları ---- */
@@ -494,19 +501,43 @@ async function draftWithAI() {
   }
 }
 
+// YAPAY ZEKA METİN FORMATLAYICI (Hata Korumalı)
+function formatText(txt) {
+  if (!txt || typeof txt !== 'string') return '';
+  return txt.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+}
+
 function renderSent() {
-  const el = document.getElementById('sentList'); if (!el) return;
+  const el = document.getElementById('sentList'); 
+  if (!el) return;
   const msgs = loadMessages();
-  el.innerHTML = msgs.length ? msgs.map(m => `<div class="msg ${m.type}"><div class="mhead"><span class="tag">${msgTag(m.type)}</span><span>${m.date}</span></div>${m.text}</div>`).join('') : '<p class="muted">Henüz mesaj gönderilmedi.</p>';
+  console.log("Gönderilen mesajlar render ediliyor, adet:", msgs.length);
+  try {
+    el.innerHTML = msgs.length 
+      ? msgs.map(m => `<div class="msg ${m.type}"><div class="mhead"><span class="tag">${msgTag(m.type)}</span><span>${m.date}</span></div>${formatText(m.text)}</div>`).join('') 
+      : '<p class="muted">Henüz mesaj gönderilmedi.</p>';
+  } catch (e) {
+    console.error("renderSent Hatası:", e);
+  }
 }
 
 function renderInbox() {
-  const el = document.getElementById('inboxList'); if (!el) return;
+  const el = document.getElementById('inboxList'); 
+  if (!el) return;
   const msgs = loadMessages();
-  el.innerHTML = msgs.length ? msgs.map(m => `<div class="msg ${m.type}"><div class="mhead"><span class="tag">${msgTag(m.type)}</span><span>${m.date}</span></div>${m.text}</div>`).join('') : '<p class="muted">Koçundan henüz mesaj gelmedi.</p>';
+  console.log("Gelen mesajlar render ediliyor, adet:", msgs.length);
+  try {
+    el.innerHTML = msgs.length 
+      ? msgs.map(m => `<div class="msg ${m.type}"><div class="mhead"><span class="tag">${msgTag(m.type)}</span><span>${m.date}</span></div>${formatText(m.text)}</div>`).join('') 
+      : '<p class="muted">Koçundan henüz mesaj gelmedi.</p>';
+  } catch (e) {
+    console.error("renderInbox Hatası:", e);
+  }
 }
 
-function msgTag(t) {return t === 'motivasyon' ? '💛 Motivasyon' : t === 'geri_bildirim' ? '💬 Geri Bildirim' : '📘 İlave Çalışma'}
+function msgTag(t) {
+  return t === 'motivasyon' ? '💛 Motivasyon' : t === 'geri_bildirim' ? '💬 Geri Bildirim' : '📘 İlave Çalışma';
+}
 
 function renderCoachHome() {
   const el = document.getElementById('coachProfileCard'); if (!el) return;
