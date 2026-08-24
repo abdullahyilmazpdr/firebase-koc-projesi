@@ -370,7 +370,13 @@ function toast(msg) {
 }
 
 /* ================= Firebase Veri Katmanı ve Dinleyiciler ================= */
-function snapToList(snap) {const arr = []; snap.forEach(c => arr.push(Object.assign({_key: c.key}, c.val()))); return arr.reverse();}
+function snapToList(snap) {
+  const arr = [];
+  snap.forEach(c => {
+    arr.push(Object.assign({_key: c.key}, c.val()));
+  });
+  return arr.reverse();
+}
 
 function initializeFirebaseListeners() {
   dbRef('profile').on('value', snap => {profileCache = snap.val() || {}; fillProfileForm(); renderCoachHome();});
