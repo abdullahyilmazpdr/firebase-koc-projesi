@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>YKS Koçum - Koç Paneli</title>
+
+  <!-- 1. Ortak CSS Dosyası -->
+  <link rel="stylesheet" href="assets/css/style.css">
+
+  <!-- 2. Firebase Kütüphaneleri -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+  <!-- 3. Firebase Ayar Dosyası -->
+  <script src="assets/js/firebase-config.js"></script>
+</head>
+
+<body>
+  <div class="app">
+    <!-- SOL MENÜ (Sadece Koç Bağlantıları) -->
+    <aside class="side">
+      <div class="logo">YKS <span>KOÇUM</span></div>
+      <nav class="nav" id="navCoach">
+        <button class="active" onclick="show('coachHome',this)">🧑‍🏫 Öğrenci Paneli</button>
+        <button onclick="show('curriculum',this)">📚 Müfredat</button>
+        <button onclick="show('annual',this)">🗓️ Yıllık Plan</button>
+        <button onclick="show('weekly',this)">📅 Haftalık Plan</button>
+        <button onclick="show('compose',this)">✉️ Mesaj Gönder</button>
+        <button onclick="show('sent',this)">📨 Gönderilenler</button>
+      </nav>
+    </aside>
+
+    <!-- ANA İÇERİK -->
+    <main class="main">
+      <header class="top">
+        <div>
+          <h1>YKS Koçum - Yönetim</h1>
+          <p>Koç Paneli</p>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <!-- Öğrenci Seçici -->
+          <div style="background: #fff; padding: 6px 12px; border-radius: 9px; border: 1px solid #dfe5ee;">
+            <label style="margin-right: 8px;">Öğrenci:</label>
+            <select id="coachStudentSelect" onchange="changeStudent(this.value)" style="border: none; outline: none; font: inherit; background: transparent; cursor: pointer; font-weight: bold; color: #2f70d4;">
+              <!-- ID'ler Firebase'deki path (students/ID) ile eşleşmeli -->
+              <option value="kagan">Şükrü Kağan Avar</option>
+              <option value="ogrenci2">Örnek Öğrenci 2</option>
+              <option value="ogrenci3">Örnek Öğrenci 3</option>
+            </select>
+          </div>
+        </div>
+      </header>
+
+      <!-- 1. ÖĞRENCİ ÖZET PANELİ -->
+      <section id="coachHome" class="page active">
+        <div class="card">
+          <h2>🧑‍🏫 Öğrenci Durumu</h2>
+          <p class="muted">Öğrencinin son girdiği hedef, çalışma durumu, deneme sonuçları ve haftalık geri bildirimleri tek ekranda.</p>
+        </div>
+        <div id="coachProfileCard" class="cards section"></div>
+        <div class="card section">
+          <h2>📝 Son Günlük Notları</h2>
+          <div id="coachJournal"></div>
+        </div>
+        <div class="card section">
+          <h2>📊 Son Deneme Sonuçları</h2>
+          <div id="coachExams"></div>
+        </div>
+        <div class="card section">
+          <h2>🔍 Zayıf Alanlar</h2>
+          <div class="analysisgrid">
+            <div><b>TYT</b><ul id="coachTytWeak"><li class="muted">Deneme yok</li></ul></div>
+            <div><b>AYT</b><ul id="coachAytWeak"><li class="muted">Deneme yok</li></ul></div>
+          </div>
+        </div>
+        <div class="card section">
+          <h2>💬 Haftalık Plan Geri Bildirimleri</h2>
+          <p class="muted">Öğrencinin haftalık plandaki günlere yazdığı yorumların en güncelleri.</p>
+          <div id="coachWeeklyFb"></div>
+        </div>
+      </section>
+
+      <!-- 2. MÜFREDAT -->
+      <section id="curriculum" class="page">
+        <div class="card">
+          <h2>📚 TYT + AYT Müfredatı</h2>
+          <p class="muted">Güncel ÖSYM/MEB TYT-AYT müfredatı görüntüleniyor.</p>
+        </div>
+        <div id="cur" class="section curriculum"></div>
+      </section>
+
+      <!-- 3. YILLIK PLAN -->
+      <section id="annual" class="page">
+        <div class="notice"><b>🎯 Yıllık Plan Görüntüleme</b><br>Seçili öğrenciye ait müfredat dağılımı.</div>
+        <div id="planArea" class="months"></div>
+      </section>
+
+      <!-- 4. HAFTALIK PLAN -->
+      <section id="weekly" class="page">
+        <div class="card section">
+          <h2>📅 Haftalık Plan</h2>
+          <p class="muted">Öğrencinin haftalık planını ve varsa bıraktığı geri bildirimleri buradan takip edebilirsin.</p>
+          <label style="max-width:260px">Ay Seç<select id="weekSel" onchange="buildWeekly(Number(this.value))"></select></label>
+        </div>
+        <div id="weekArea"></div>
+      </section>
+
+      <!-- 5. MESAJ GÖNDER -->
+      <section id="compose" class="page">
+        <div class="notice"><b>✉️ Öğrenciye Mesaj Gönder</b><br>Motivasyon, geri bildirim veya ilave çalışma önerisi yaz; istersen önce yapay zekadan taslak iste, sonra düzenleyip gönder.</div>
+        <div class="card">
+          <label>Mesaj Türü
+            <select id="msgType">
+              <option value="motivasyon">💛 Motivasyon</option>
+              <option value="geri_bildirim">💬 Geri Bildirim</option>
+              <option value="ilave">📘 İlave Çalışma</option>
+            </select>
+          </label>
+          <textarea id="msgText" placeholder="Mesajını buraya yaz..."></textarea>
+          <div class="actions">
+            <button class="aibtn" onclick="draftWithAI()">🤖 Yapay Zekadan Taslak Al</button>
+            <button class="primary" onclick="sendMessage()">📤 Öğrenciye Gönder</button>
+          </div>
+          <p class="muted" id="aiStatus"></p>
+        </div>
+      </section>
+
+      <!-- 6. GÖNDERİLEN MESAJLAR -->
+      <section id="sent" class="page">
+        <div class="card">
+          <h2>📨 Gönderilen Mesajlar</h2>
+          <p class="muted">Bu öğrenciye şu ana kadar gönderdiğin tüm mesajlar.</p>
+        </div>
+        <div id="sentList" class="msg-feed section"></div>
+      </section>
+    </main>
+  </div>
+  <div id="toast" class="toast"></div>
+
+  <!-- 4. Ortak JavaScript Dosyası -->
+  <script src="assets/js/app.js"></script>
+
+  <!-- Koç Sayfasına Özel İşlemler -->
+  <script>
+    // Sayfa yüklendiğinde, localStorage'daki seçili öğrenciyi dropdown'da aktif et
+    document.addEventListener('DOMContentLoaded', () => {
+      const activeStudent = localStorage.getItem('activeStudentId') || 'kagan';
+      const selectEl = document.getElementById('coachStudentSelect');
+      if(selectEl) selectEl.value = activeStudent;
+
+      const firstBtn = document.querySelector('#navCoach button');
+      if(firstBtn) show('coachHome', firstBtn);
+    });
+
+    // Öğrenci değiştirildiğinde ID'yi kaydet ve sayfayı yenileyerek yeni verileri çek
+    function changeStudent(newId) {
+      localStorage.setItem('activeStudentId', newId);
+      window.location.reload();
+    }
+  </script>
+</body>
+</html>

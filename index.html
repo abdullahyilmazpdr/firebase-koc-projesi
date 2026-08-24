@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>YKS Koçum - Öğrenci Paneli</title>
+
+  <!-- 1. Ortak CSS Dosyası -->
+  <link rel="stylesheet" href="assets/css/style.css">
+
+  <!-- 2. Firebase Kütüphaneleri -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+  <!-- 3. Firebase Ayar Dosyası -->
+  <script src="assets/js/firebase-config.js"></script>
+</head>
+
+<body>
+  <div class="app">
+    <!-- SOL MENÜ -->
+    <aside class="side">
+      <div class="logo">YKS <span>KOÇUM</span></div>
+      <nav class="nav" id="navStudent">
+        <button class="active" onclick="show('home',this)">🏠 Ana Sayfa</button>
+        <button onclick="show('status',this)">🙋 Durumum</button>
+        <button onclick="show('curriculum',this)">📚 Müfredat</button>
+        <button onclick="show('annual',this)">🗓️ Yıllık Plan</button>
+        <button onclick="show('weekly',this)">📅 Haftalık Plan</button>
+        <button onclick="show('daily',this)">📝 Günlük Görevler</button>
+        <button onclick="show('mebi',this)">🏫 MEBİ Denemeleri</button>
+        <button onclick="show('exam',this)">📈 Deneme Analizi</button>
+        <button onclick="show('inbox',this)">💌 Koçumdan Gelenler</button>
+      </nav>
+    </aside>
+
+    <!-- ANA İÇERİK -->
+    <main class="main">
+      <header class="top">
+        <div>
+          <h1>YKS Koçum</h1>
+          <p>Sayısal • TYT + AYT • 2026–2027</p>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <!-- Rol değiştirici butonlar kaldırıldı, sadece profil bırakıldı -->
+          <div class="profile"><span class="avatar">Ş</span>Şükrü Kağan Avar</div>
+        </div>
+      </header>
+
+      <section id="home" class="page active">
+        <div class="welcome">
+          <div class="welcome-icon">❤️</div>
+          <div>
+            <div class="welcome-title">Şükrü Kağan Avar, hoş geldin Babacık! 👋</div>
+            <div class="welcome-text">Başaracağına inanıyorum. 💪🎯</div>
+          </div>
+        </div>
+        <div class="cards">
+          <div class="card stat"><small>Hedef Sıralama</small><strong class="blue">30.000</strong><small>Eczacılık</small></div>
+          <div class="card stat"><small>Başlangıç TYT</small><strong class="green">50</strong><small>net</small></div>
+          <div class="card stat"><small>Başlangıç AYT</small><strong class="orange">30</strong><small>net</small></div>
+          <div class="card stat"><small>Günlük Çalışma</small><strong>4 saat</strong><small>net çalışma</small></div>
+        </div>
+        <div class="section card">
+          <h2>🔗 TYT → AYT Konu Köprüsü</h2>
+          <p><b>Temel Kavramlar programdan kaldırıldı.</b> Kağan bu konuyu tamamlamış kabul edildi.</p>
+          <div class="dependency"><b>Kural:</b> Her AYT konusu, ancak ön koşulu olan TYT konusu (veya dersteki TYT altyapısının belirli bir kısmı) tamamlandıktan sonra plana eklenir. Böylece AYT hiçbir zaman TYT'nin önüne geçmez, ama TYT bitmeden de beklemez — <b>paralel</b> ilerler.<br><b>Örnek:</b> TYT Fonksiyonlar → AYT Fonksiyonlar → Fonksiyonlarda Uygulamalar → Limit → Türev → İntegral</div>
+        </div>
+        <div class="section card">
+          <h2>🗓️ Yıllık Plan Hazır</h2>
+          <p class="muted">Plan, güncel ÖSYM TYT/AYT müfredatına göre konu bazlı ağırlıklandırma ve ön koşul mantığıyla otomatik oluşturuldu: TYT konuları önce yetişecek şekilde ilerler, her dersin AYT konuları kendi TYT altyapısı hazır olduğunda plana paralel eklenir, zor/kapsamlı konulara daha fazla ay ağırlığı ayrılır. Planın altında aylık hedefler, haftalık program ve günlük görevler üretilecek.</p>
+          <div class="progress"><i></i></div>
+          <p><b>Plan dönemi:</b> Eylül 2026 – Haziran 2027</p>
+        </div>
+      </section>
+
+      <section id="status" class="page">
+        <div class="card">
+          <h2>🙋 Durumum</h2>
+          <p class="muted">Hedefini, günlük çalışma sürenİ ve genel durumunu buradan güncel tut. Koçun bu bilgileri görebilir.</p>
+          <div class="formgrid">
+            <label>Hedef Sıralama<input id="pfHedef" type="number" placeholder="Örn. 30000"></label>
+            <label>Hedef Bölüm<input id="pfBolum" placeholder="Örn. Eczacılık"></label>
+            <label>Günlük Net Çalışma (saat)<input id="pfSaat" type="number" step="0.5" placeholder="Örn. 4"></label>
+            <label>Bugünkü Ruh Hali / Motivasyon (1-10)<input id="pfMood" type="number" min="1" max="10" placeholder="Örn. 7"></label>
+          </div>
+          <div class="actions"><button class="primary" onclick="saveProfile()">💾 Bilgilerimi Kaydet</button></div>
+        </div>
+        <div class="card section">
+          <h2>📝 Sürekli Durum Günlüğü</h2>
+          <p class="muted">Bugün nasıl geçti, neyi zor buldun, neye ihtiyacın var — istediğin zaman yaz. Koçun okuyabilir.</p>
+          <textarea id="journalText" placeholder="Bugün ne durumdayım, neye ihtiyacım var..."></textarea>
+          <div class="actions"><button class="primary" onclick="addJournal()">➕ Ekle</button></div>
+          <div id="journalList" class="section"></div>
+        </div>
+      </section>
+
+      <section id="curriculum" class="page">
+        <div class="card">
+          <h2>📚 TYT + AYT Müfredatı</h2>
+          <p class="muted">Güncel ÖSYM/MEB TYT-AYT müfredatına göre hazırlandı. Her konunun yanında <b>zorluk/kapsam ağırlığı</b> (⚪ Hafif / 🟡 Orta / 🔥 Yoğun) ve plana <b>hangi ayda</b> alındığı gösterilir. AYT konuları, kendi TYT ön koşulu tamamlanmadan plana alınmaz. <b>Matematikte Temel Kavramlar tamamlandı kabul edilerek programdan çıkarıldı.</b></p>
+        </div>
+        <div id="cur" class="section curriculum"></div>
+      </section>
+
+      <section id="annual" class="page">
+        <div class="notice"><b>🎯 Yıllık plan otomatik oluşturuldu. Deneme sonuçları girdikçe plan güncellenecek.</b><br>Hedef: 30.000 • Eczacılık • 4 saat/gün • Başlangıç 50 TYT / 30 AYT<br><small class="muted">Eylül–Nisan: yeni konu dönemi (TYT önce, AYT dersi kendi TYT altyapısı bittikçe paralel eklenir) • Mayıs–Haziran: tam kapsamlı tekrar + deneme dönemi</small></div>
+        <div id="planArea" class="months"></div>
+      </section>
+
+      <section id="weekly" class="page">
+        <div class="card section">
+          <h2>📅 Haftalık Plan</h2>
+          <p class="muted">Haftalık plan, Yıllık Plan sekmesindeki güncel ÖSYM konu/ön koşul mantığından otomatik üretilir. Bir ay seç, o ayın konuları haftanın 7 gününe ve günde 4 saatlik bloklara dağıtılsın.</p>
+          <label style="max-width:260px">Ay Seç<select id="weekSel" onchange="buildWeekly(Number(this.value))"></select></label>
+        </div>
+        <div id="weekArea"></div>
+        <div class="good section"><b>🔒 Ön koşul:</b> Bir AYT konusu, bağlı olduğu TYT (veya AYT) ön koşulu tamamlanmadan haftalık plana alınmaz — bu mantık Yıllık Plan'daki sıralamadan otomatik miras alınır.</div>
+      </section>
+
+      <section id="daily" class="page">
+        <div class="card">
+          <h2>📝 Günlük Görevler</h2>
+          <p class="muted">Günlük görevler haftalık plandan otomatik üretilecek. Her gün 4 adet 60 dakikalık çalışma bloğu olacak.</p>
+        </div>
+      </section>
+
+      <section id="mebi" class="page">
+        <div class="notice"><b>🏫 MEBİ Denemeleri</b><br>MEBİ, YKS için Türkiye geneli denemeler, dijital denemeler ve PDF içerikleri sunuyor. Denemeler ve video çözümleri MEBİ'nin kendi platformundan açılır.</div>
+        <div class="cards">
+          <div class="card stat"><small>MEBİ YKS Denemeleri</small><strong class="blue">TYT + AYT</strong><small>Güncel içeriklere eriş</small></div>
+          <div class="card stat"><small>Video Çözümleri</small><strong class="green">Var</strong><small>Deneme soruları için</small></div>
+          <div class="card stat"><small>PDF</small><strong class="orange">Var</strong><small>İndirilebilir içerikler</small></div>
+          <div class="card stat"><small>Platform</small><strong>MEBİ</strong><small>Ücretsiz</small></div>
+        </div>
+        <div class="card section">
+          <h2>📚 MEBİ'den Deneme Çöz</h2>
+          <p class="muted">Aşağıdaki bağlantılar MEBİ'nin resmi sayfalarına götürür. Öğrenci MEBİ'ye giriş yaptıktan sonra güncel TYT/AYT denemelerini seçebilir.</p>
+          <div class="actions">
+            <a class="primary btnlink" href="https://mebi.eba.gov.tr/qr-exam-list" target="_blank">📝 MEBİ Deneme Sınavları</a>
+            <a class="secondary btnlink" href="https://mebi.eba.gov.tr/" target="_blank">🏠 MEBİ Ana Sayfa</a>
+          </div>
+        </div>
+        <div class="card section">
+          <h2>🎯 Programdaki Denemeler</h2>
+          <div class="tablewrap">
+            <table>
+              <thead><tr><th>Dönem</th><th>Önerilen MEBİ Denemesi</th><th>Programdaki kullanım</th><th>Sonuç</th></tr></thead>
+              <tbody>
+                <tr><td>TYT temel dönemi</td><td>TYT tarama / deneme</td><td>Deneme + yanlış analizi</td><td><button onclick="show('exam',document.querySelector('.nav button[onclick*=\'exam\']'))">Sonuç Gir</button></td></tr>
+                <tr><td>AYT başlangıcı</td><td>AYT Matematik / Fen tarama</td><td>Konu eksiklerini belirle</td><td><button onclick="show('exam',document.querySelector('.nav button[onclick*=\'exam\']'))">Sonuç Gir</button></td></tr>
+                <tr><td>Deneme dönemi</td><td>MEBİ Türkiye geneli YKS denemeleri</td><td>Net + ders analizi</td><td><button onclick="show('exam',document.querySelector('.nav button[onclick*=\'exam\']'))">Sonuç Gir</button></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card section">
+          <h2>🔗 Örnek MEBİ Tarama</h2>
+          <p>Resmî MEBİ üzerinde yayınlanan <b>Matematik TYT Tarama Testi-1</b> gibi testlere ve soru çözüm videolarına erişilebilir.</p>
+          <a class="btnlink" href="https://mebi.eba.gov.tr/student/exam/diagnostic/qr-details/b4711fc4-18e1-4a48-b926-08ddc308bcbd" target="_blank">▶ Matematik TYT Tarama Testi-1'i Aç</a>
+        </div>
+      </section>
+
+      <section id="exam" class="page">
+        <div class="notice"><b>📈 Deneme Sonucu Gir</b><br>Doğru, yanlış ve boş sayılarını gir. Sistem netleri otomatik hesaplar ve eksik konu analizine temel oluşturur.</div>
+        <div class="card">
+          <h2>➕ Yeni Deneme</h2>
+          <div class="formgrid">
+            <label>Deneme Adı<input id="examName" placeholder="Örn. Türkiye Geneli TYT 1"></label>
+            <label>Tarih<input id="examDate" type="date"></label>
+          </div>
+          <h3>TYT</h3>
+          <div class="scoregrid">
+            <div><b>Türkçe</b><input id="tytTurkceD" type="number" min="0" placeholder="Doğru"><input id="tytTurkceY" type="number" min="0" placeholder="Yanlış"><input id="tytTurkceB" type="number" min="0" placeholder="Boş">
+              <div class="topicsel"><label>Yanlış Konular (opsiyonel)</label><select id="topics_tytTurkce" multiple size="4"></select></div>
+            </div>
+            <div><b>Matematik</b><input id="tytMatD" type="number" min="0" placeholder="Doğru"><input id="tytMatY" type="number" min="0" placeholder="Yanlış"><input id="tytMatB" type="number" min="0" placeholder="Boş">
+              <div class="topicsel"><label>Yanlış Konular (opsiyonel)</label><select id="topics_tytMat" multiple size="4"></select></div>
+            </div>
+            <div><b>Sosyal</b><input id="tytSosD" type="number" min="0" placeholder="Doğru"><input id="tytSosY" type="number" min="0" placeholder="Yanlış"><input id="tytSosB" type="number" min="0" placeholder="Boş"></div>
+            <div><b>Fen</b><input id="tytFenD" type="number" min="0" placeholder="Doğru"><input id="tytFenY" type="number" min="0" placeholder="Yanlış"><input id="tytFenB" type="number" min="0" placeholder="Boş">
+              <div class="topicsel"><label>Yanlış Konular (opsiyonel)</label><select id="topics_tytFen" multiple size="4"></select></div>
+            </div>
+          </div>
+          <h3>AYT Sayısal</h3>
+          <div class="scoregrid">
+            <div><b>Matematik</b><input id="aytMatD" type="number" min="0" placeholder="Doğru"><input id="aytMatY" type="number" min="0" placeholder="Yanlış"><input id="aytMatB" type="number" min="0" placeholder="Boş">
+              <div class="topicsel"><label>Yanlış Konular (opsiyonel)</label><select id="topics_aytMat" multiple size="4"></select></div>
+            </div>
+            <div><b>Fizik</b><input id="aytFizD" type="number" min="0" placeholder="Doğru"><input id="aytFizY" type="number" min="0" placeholder="Yanlış"><input id="aytFizB" type="number" min="0" placeholder="Boş">
+              <div class="topicsel"><label>Yanlış Konular (opsiyonel)</label><select id="topics_aytFiz" multiple size="4"></select></div>
+            </div>
+            <div><b>Kimya</b><input id="aytKimD" type="number" min="0" placeholder="Doğru"><input id="aytKimY" type="number" min="0" placeholder="Yanlış"><input id="aytKimB" type="number" min="0" placeholder="Boş">
+              <div class="topicsel"><label>Yanlış Konular (opsiyonel)</label><select id="topics_aytKim" multiple size="4"></select></div>
+            </div>
+            <div><b>Biyoloji</b><input id="aytBioD" type="number" min="0" placeholder="Doğru"><input id="aytBioY" type="number" min="0" placeholder="Yanlış"><input id="aytBioB" type="number" min="0" placeholder="Boş">
+              <div class="topicsel"><label>Yanlış Konular (opsiyonel)</label><select id="topics_aytBio" multiple size="4"></select></div>
+            </div>
+          </div>
+          <div class="actions"><button class="primary" onclick="saveExam()">💾 Deneme Sonucunu Kaydet</button></div>
+        </div>
+        <div class="card section">
+          <h2>📊 Deneme Sonuçlarım</h2>
+          <div id="examList" class="tablewrap"></div>
+        </div>
+        <div class="card section">
+          <h2>🔍 Eksik Konu / Yanlış Analizi</h2>
+          <p class="muted">Deneme sonrasında öğrencinin yanlış yaptığı konular buraya eklenir. İlk sürümde ders bazlı zayıf alan seçimi yapılabilir; konu bazlı analiz sonraki adımda deneme soru etiketleriyle otomatikleşecek.</p>
+          <div class="analysisgrid">
+            <div><b>TYT Önceliği</b><ul id="tytWeak"><li>Deneme girildiğinde oluşacak</li></ul></div>
+            <div><b>AYT Önceliği</b><ul id="aytWeak"><li>Deneme girildiğinde oluşacak</li></ul></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="inbox" class="page">
+        <div class="card">
+          <h2>💌 Koçumdan Gelenler</h2>
+          <p class="muted">Koçunun sana gönderdiği motivasyon mesajları, geri bildirimler ve ilave çalışmalar burada listelenir.</p>
+        </div>
+        <div id="inboxList" class="msg-feed section"></div>
+      </section>
+    </main>
+  </div>
+  <div id="toast" class="toast"></div>
+
+  <!-- 4. Ortak JavaScript Dosyası -->
+  <script src="assets/js/app.js"></script>
+  
+  <!-- Sadece bu sayfaya özel basit tetikleyiciler -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const homeBtn = document.querySelector('#navStudent button');
+      if(homeBtn) {
+        show('home', homeBtn);
+      }
+    });
+  </script>
+</body>
+</html>
