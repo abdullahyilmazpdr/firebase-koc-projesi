@@ -360,12 +360,16 @@ async function generateWeeklyPlanWithAI(m, w) {
 
 function fillWeekSel() {
   const sel = document.getElementById("weekSel");
-  if (!sel) return;
-  MONTHS_META.forEach((mm, i) => sel.innerHTML += `<option value="${i}">${mm.label}</option>`);
-  sel.value = "0";
+  const dailySel = document.getElementById("dailyMonthSel");
+  MONTHS_META.forEach((mm, i) => {
+    if (sel) sel.innerHTML += `<option value="${i}">${mm.label}</option>`;
+    if (dailySel) dailySel.innerHTML += `<option value="${i}">${mm.label}</option>`;
+  });
+  if (sel) sel.value = "0";
+  if (dailySel) dailySel.value = "0";
 }
 
-let profileCache = {}, journalCache = [], examsCache = [], weeklyFbCache = {}, messagesCache = [], weeklyPlansCache = {};
+let profileCache = {}, journalCache = [], examsCache = [], weeklyFbCache = {}, messagesCache = [], weeklyPlansCache = {}, dailyProgressCache = {};
 
 const TOPIC_SOURCE = {
   topics_tytTurkce: CATALOG.turkce.tyt,
@@ -488,6 +492,12 @@ function initializeFirebaseListeners() {
     messagesCache = snapToList(snap); 
     renderSent(); 
     renderInbox();
+  });
+   
+ // Günlük görev ilerlemelerini dinleyen yapı
+  dbRef('dailyProgress').on('value', snap => {
+    dailyProgressCache = snap.val() || {}; 
+    renderDailyPlan(); 
   });
 }
 
@@ -674,6 +684,74 @@ function updateWeakInto(details, tId, aId) {
   const aEl = document.getElementById(aId);
   if (tEl) tEl.innerHTML = t.length ? t.map(x => `<li>🔴 ${x}</li>`).join('') : '<li>🟢 Belirgin zayıf alan yok</li>';
   if (aEl) aEl.innerHTML = a.length ? a.map(x => `<li>🔴 ${x}</li>`).join('') : '<li>🟢 Belirgin zayıf alan yok</li>';
+}
+
+/* ================= GÜNLÜK PLAN CHECK-LIST ================= */
+function renderDailyPlan() {
+  const area = document.getElementById('dailyArea');
+  const mSel = document.getElementById('dailyMonthSel');
+  const wSel = document.getElementById('dailyWeekSel');
+  const dSel = document.getElementById('dailyDaySel');
+  if (!area || !mSel || !wSel || !dSel) return;
+
+  const m = mSel.value;
+  const w = wSel.value;
+  const day = dSel.value;
+  const planKey = `${m}-${w}`;
+
+  const planData = weeklyPlansCache[planKey];
+  
+  // O haftanın planı yapay zeka tarafından henüz oluşturulmadıysa:
+  if (!planData || !planData[day]) {
+    area.innerHTML = `<div class="card section"><p class="muted">Seçilen gün için henüz bir plan oluşturulmamış. Koç paneli üzerinden haftalık planın üretilmesi gerekiyor.</p></div>`;
+    return;
+  }
+
+  const tasks = planData[day];
+  const progressKey = `${m}-${w}-${day}`;
+  // Veritabanında o gün için işaretleme yoksa varsayılan olarak hepsi false (boş) gelir
+  const progress = dailyProgressCache[progressKey] || [false, false, false, false];
+  const completedCount = progress.filter(Boolean).length;
+  const percent = Math.round((completedCount / tasks.length) * 100) || 0;
+
+  const isCoach = window.location.pathname.includes('koc.html');
+
+  let html = `
+    <div class="card section">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+        <h3 style="margin:0; color:#245bb5;">${day} Görevleri</h3>
+        <span class="tag" style="font-size:14px; background:${percent === 100 ? '#eaf8f1' : '#eef1f5'}; color:${percent === 100 ? '#15966a' : '#40516b'};">İlerleme: %${percent}</span>
+      </div>
+      <div class="progress" style="margin-bottom:20px; background:#e8edf5;"><i style="width:${percent}%; background:${percent === 100 ? '#15966a' : '#3b82f6'};"></i></div>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+  `;
+
+  tasks.forEach((task, idx) => {
+    const checked = progress[idx] ? 'checked' : '';
+    const disabled = isCoach ? 'disabled' : ''; // Koçlar checkbox'ları sadece görebilir, değiştiremez
+    
+    html += `
+      <label style="display:flex; align-items:center; gap:15px; background:${progress[idx] ? '#f2fbf3' : '#f8faff'}; padding:15px; border-radius:12px; border:1px solid ${progress[idx] ? '#cdeccd' : '#e8edf4'}; cursor:${isCoach ? 'default' : 'pointer'}; transition: 0.2s;">
+        <input type="checkbox" ${checked} ${disabled} onchange="toggleDailyTask(${m}, ${w}, '${day}', ${idx}, this.checked)" style="width:22px; height:22px; cursor:pointer;">
+        <span style="font-size:15px; color:${progress[idx] ? '#15966a' : '#172033'}; text-decoration:${progress[idx] ? 'line-through' : 'none'};"><b>${idx+1}. Blok:</b> ${task}</span>
+      </label>
+    `;
+  });
+
+  html += `</div></div>`;
+  area.innerHTML = html;
+}
+
+function toggleDailyTask(m, w, day, idx, isChecked) {
+  const progressKey = `${m}-${w}-${day}`;
+  const currentProgress = dailyProgressCache[progressKey] || [false, false, false, false];
+  currentProgress[idx] = isChecked;
+  
+  dbRef(`dailyProgress/${progressKey}`).set(currentProgress)
+    .then(() => {
+      if (isChecked) toast('🎉 Harika! Bir görevi daha tamamladın.');
+    })
+    .catch(() => toast('⚠️ Kaydedilemedi. İnternet bağlantını kontrol et.'));
 }
 
 /* ================= İLK YÜKLEME ÇAĞRILARI ================= */
