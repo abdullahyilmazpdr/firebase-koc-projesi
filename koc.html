@@ -102,7 +102,7 @@
     <h2>📅 Haftalık Plan</h2>
     <p class="muted">Bu alandan ay ve hafta seçimi yaparak çalışma programını görüntüleyebilirsin. Koç paneli üzerinden yapay zeka ile haftaya özel dinamik program üretilebilir.</p>
     <div style="display:flex; gap:15px; max-width:400px;">
-      <label style="flex:1">Ay Seç<select id="weekSel" onchange="renderWeeklyPlan()"></select></label>
+      <label style="flex:1">Ay Seç<select id="weekSel" onchange="updateWeekOptions('weekSel', 'subWeekSel'); renderWeeklyPlan()"></select></label>
       <label style="flex:1">Hafta Seç
         <select id="subWeekSel" onchange="renderWeeklyPlan()">
           <option value="1">1. Hafta</option>
