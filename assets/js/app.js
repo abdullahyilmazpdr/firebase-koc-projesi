@@ -452,23 +452,42 @@ function snapToList(snap) {
 }
 
 function initializeFirebaseListeners() {
-  dbRef('profile').on('value', snap => {profileCache = snap.val() || {}; fillProfileForm(); renderCoachHome();});
-  dbRef('journal').on('value', snap => {journalCache = snapToList(snap); renderJournal(); renderCoachHome();});
-  dbRef('exams').on('value', snap => {examsCache = snapToList(snap); renderExams(); if (examsCache[0]) updateWeak(examsCache[0].details); renderCoachHome();});
-  dbRef('weeklyFeedback').on('value', snap => {
-    weeklyFbCache = snap.val() || {}; 
-    renderWeeklyPlan();
-    const sel = document.getElementById('weekSel');
-    buildWeekly(Number(sel ? sel.value : 0)); 
+  dbRef('profile').on('value', snap => {
+    profileCache = snap.val() || {}; 
+    fillProfileForm(); 
     renderCoachHome();
   });
+  
+  dbRef('journal').on('value', snap => {
+    journalCache = snapToList(snap); 
+    renderJournal(); 
+    renderCoachHome();
+  });
+  
+  dbRef('exams').on('value', snap => {
+    examsCache = snapToList(snap); 
+    renderExams(); 
+    if (examsCache[0]) updateWeak(examsCache[0].details); 
+    renderCoachHome();
+  });
+  
+  // ⚠️ İŞTE HATA VEREN KISIM BURASIYDI: buildWeekly yerine renderWeeklyPlan kullanıyoruz
+  dbRef('weeklyFeedback').on('value', snap => {
+    weeklyFbCache = snap.val() || {}; 
+    renderWeeklyPlan(); 
+    renderCoachHome();
+  });
+  
+  // 📅 YENİ EKLENEN HAFTALIK PLAN DİNLEYİCİSİ
+  dbRef('weeklyPlans').on('value', snap => {
+    weeklyPlansCache = snap.val() || {}; 
+    renderWeeklyPlan(); 
+  });
+
   dbRef('messages').on('value', snap => {
-    console.log("Firebase 'messages' verisi geldi!"); 
     messagesCache = snapToList(snap); 
     renderSent(); 
     renderInbox();
-  }, (error) => {
-    console.error("Firebase messages okuma hatası:", error);
   });
 }
 
