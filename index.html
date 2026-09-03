@@ -128,10 +128,27 @@
 </section>
 
       <section id="daily" class="page">
-        <div class="card">
+        <div class="card section">
           <h2>📝 Günlük Görevler</h2>
-          <p class="muted">Günlük görevler haftalık plandan otomatik üretilecek. Her gün 4 adet 60 dakikalık çalışma bloğu olacak.</p>
+          <p class="muted">Seçtiğin günün görevlerini tamamladıkça işaretle. İlerlemen otomatik olarak kaydedilir ve koçun tarafından takip edilebilir.</p>
+          <div style="display:flex; gap:10px; max-width:600px; flex-wrap: wrap;">
+            <label style="flex:1; min-width:120px">Ay<select id="dailyMonthSel" onchange="renderDailyPlan()"></select></label>
+            <label style="flex:1; min-width:120px">Hafta
+              <select id="dailyWeekSel" onchange="renderDailyPlan()">
+                <option value="1">1. Hafta</option><option value="2">2. Hafta</option>
+                <option value="3">3. Hafta</option><option value="4">4. Hafta</option>
+              </select>
+            </label>
+            <label style="flex:1; min-width:120px">Gün
+              <select id="dailyDaySel" onchange="renderDailyPlan()">
+                <option value="Pazartesi">Pazartesi</option><option value="Salı">Salı</option>
+                <option value="Çarşamba">Çarşamba</option><option value="Perşembe">Perşembe</option>
+                <option value="Cuma">Cuma</option><option value="Cumartesi">Cumartesi</option><option value="Pazar">Pazar</option>
+              </select>
+            </label>
+          </div>
         </div>
+        <div id="dailyArea"></div>
       </section>
 
       <section id="mebi" class="page">
