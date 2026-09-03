@@ -98,13 +98,23 @@
 
       <!-- 4. HAFTALIK PLAN -->
       <section id="weekly" class="page">
-        <div class="card section">
-          <h2>📅 Haftalık Plan</h2>
-          <p class="muted">Öğrencinin haftalık planını ve varsa bıraktığı geri bildirimleri buradan takip edebilirsin.</p>
-          <label style="max-width:260px">Ay Seç<select id="weekSel" onchange="buildWeekly(Number(this.value))"></select></label>
-        </div>
-        <div id="weekArea"></div>
-      </section>
+  <div class="card section">
+    <h2>📅 Haftalık Plan</h2>
+    <p class="muted">Bu alandan ay ve hafta seçimi yaparak çalışma programını görüntüleyebilirsin. Koç paneli üzerinden yapay zeka ile haftaya özel dinamik program üretilebilir.</p>
+    <div style="display:flex; gap:15px; max-width:400px;">
+      <label style="flex:1">Ay Seç<select id="weekSel" onchange="renderWeeklyPlan()"></select></label>
+      <label style="flex:1">Hafta Seç
+        <select id="subWeekSel" onchange="renderWeeklyPlan()">
+          <option value="1">1. Hafta</option>
+          <option value="2">2. Hafta</option>
+          <option value="3">3. Hafta</option>
+          <option value="4">4. Hafta</option>
+        </select>
+      </label>
+    </div>
+  </div>
+  <div id="weekArea"></div>
+</section>
 
       <!-- 5. MESAJ GÖNDER -->
       <section id="compose" class="page">
