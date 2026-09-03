@@ -109,14 +109,23 @@
       </section>
 
       <section id="weekly" class="page">
-        <div class="card section">
-          <h2>📅 Haftalık Plan</h2>
-          <p class="muted">Haftalık plan, Yıllık Plan sekmesindeki güncel ÖSYM konu/ön koşul mantığından otomatik üretilir. Bir ay seç, o ayın konuları haftanın 7 gününe ve günde 4 saatlik bloklara dağıtılsın.</p>
-          <label style="max-width:260px">Ay Seç<select id="weekSel" onchange="buildWeekly(Number(this.value))"></select></label>
-        </div>
-        <div id="weekArea"></div>
-        <div class="good section"><b>🔒 Ön koşul:</b> Bir AYT konusu, bağlı olduğu TYT (veya AYT) ön koşulu tamamlanmadan haftalık plana alınmaz — bu mantık Yıllık Plan'daki sıralamadan otomatik miras alınır.</div>
-      </section>
+  <div class="card section">
+    <h2>📅 Haftalık Plan</h2>
+    <p class="muted">Bu alandan ay ve hafta seçimi yaparak çalışma programını görüntüleyebilirsin. Koç paneli üzerinden yapay zeka ile haftaya özel dinamik program üretilebilir.</p>
+    <div style="display:flex; gap:15px; max-width:400px;">
+      <label style="flex:1">Ay Seç<select id="weekSel" onchange="renderWeeklyPlan()"></select></label>
+      <label style="flex:1">Hafta Seç
+        <select id="subWeekSel" onchange="renderWeeklyPlan()">
+          <option value="1">1. Hafta</option>
+          <option value="2">2. Hafta</option>
+          <option value="3">3. Hafta</option>
+          <option value="4">4. Hafta</option>
+        </select>
+      </label>
+    </div>
+  </div>
+  <div id="weekArea"></div>
+</section>
 
       <section id="daily" class="page">
         <div class="card">
