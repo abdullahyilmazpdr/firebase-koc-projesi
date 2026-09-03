@@ -321,7 +321,7 @@ async function generateWeeklyPlanWithAI(m, w) {
     Öğrencinin Zayıf Olduğu Alanlar: ${eksikMetni}
 
     Görev: Zayıf alanlara ağırlık vererek ve müfredatı eriterek 7 günlük bir plan oluştur.
-    DİKKAT: Çıktın SADECE VE SADECE aşağıdaki JSON formatında olmalıdır. Hiçbir giriş cümlesi, açıklama veya markdown (```json) etiketi KULLANMA. Doğrudan JSON nesnesini ver:
+    DİKKAT: Çıktın SADECE VE SADECE aşağıdaki JSON formatında olmalıdır. Hiçbir giriş cümlesi, açıklama veya markdown etiketi KULLANMA. Doğrudan JSON nesnesini ver:
     {
       "Pazartesi": ["1. blok açıklaması", "2. blok açıklaması", "3. blok açıklaması", "4. blok açıklaması"],
       "Salı": ["...", "...", "...", "..."],
