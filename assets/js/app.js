@@ -283,6 +283,9 @@ function monthTopics(key, level, m) {
 }
 
 /* ================= DİNAMİK VE YAPAY ZEKA DESTEKLİ HAFTALIK PLAN ================= */
+/* ================= DİNAMİK VE YAPAY ZEKA DESTEKLİ HAFTALIK PLAN ================= */
+let isEditingWeek = false; // Düzenleme modunda olup olmadığımızı takip eder
+
 function renderWeeklyPlan() {
   const mSel = document.getElementById('weekSel');
   const wSel = document.getElementById('subWeekSel');
@@ -293,44 +296,109 @@ function renderWeeklyPlan() {
   const w = Number(wSel.value);
   const planKey = `${m}-${w}`;
   const planData = weeklyPlansCache[planKey];
+  const isCoach = window.location.pathname.includes('koc.html');
+
+  isEditingWeek = false; // Başka haftaya veya aya geçilirse düzenleme modunu otomatik sıfırla
 
   if (m >= TEACH_MONTHS) {
     area.innerHTML = `<div class="notice"><b>📅 ${MONTHS_META[m].label}</b><br>Bu ay yeni konu işlenmiyor: tam kapsamlı TYT+AYT tekrarı ve deneme dönemi.</div>`;
     return;
   }
 
-  // Eğer veritabanında o hafta için plan yoksa:
+  // Plan henüz oluşturulmamışsa
   if (!planData) {
-    const isCoach = window.location.pathname.includes('koc.html');
     if (isCoach) {
       area.innerHTML = `
         <div class="card section" style="text-align:center; padding: 40px 20px;">
           <p class="muted">Bu hafta için henüz bir program oluşturulmamış.</p>
-          <button class="aibtn" onclick="generateWeeklyPlanWithAI(${m},${w})" style="padding:12px 24px; font-size:15px; border-radius:10px; font-weight:bold;">
+          <button class="aibtn" onclick="generateWeeklyPlanWithAI(${m}, ${w})" style="padding:12px 24px; font-size:15px; border-radius:10px; font-weight:bold;">
             🤖 Yapay Zeka İle ${w}. Haftayı Planla
           </button>
           <p id="aiPlanStatus" class="muted" style="margin-top:15px;"></p>
         </div>`;
     } else {
-      area.innerHTML = `<div class="card section"><p class="muted">Koçunuz ${MONTHS_META[m].label} -${w}. Hafta için henüz bir program oluşturmadı.</p></div>`;
+      area.innerHTML = `<div class="card section"><p class="muted">Koçunuz ${MONTHS_META[m].label} - ${w}. Hafta için henüz bir program oluşturmadı.</p></div>`;
     }
     return;
   }
 
-  // Eğer plan varsa ekrana bas
   area.innerHTML = "";
+  
+  // Koç için "Haftayı Düzenle" butonunu ekle
+  if (isCoach) {
+    const btnDiv = document.createElement("div");
+    btnDiv.className = "actions";
+    btnDiv.style.marginBottom = "15px";
+    btnDiv.innerHTML = `<button id="editWeekBtn" class="secondary" onclick="toggleEditWeeklyPlan('${m}', '${w}')">✏️ Haftayı Manuel Düzenle</button>`;
+    area.appendChild(btnDiv);
+  }
+
   DAYS.forEach((day, d) => {
     const blocks = planData[day] || ["Serbest", "Serbest", "Serbest", "Serbest"];
-    const trs = blocks.map((b, i) => `<tr><td>${i+1}. Saat</td><td><b>${b}</b></td><td style="text-align:right;"><a class="btnlink secondary" href="${ytLink(b)}" target="_blank">▶ Video Bul</a></td></tr>`).join("");
+    // Düzenlenebilmesi için td etiketlerine özel class (task-cell) ve data özellikleri (day, idx) eklendi
+    const trs = blocks.map((b, i) => `<tr>
+      <td style="width:100px;">${i+1}. Saat</td>
+      <td class="task-cell" data-day="${day}" data-idx="${i}"><b>${b}</b></td>
+      <td style="text-align:right; width:120px;"><a class="btnlink secondary" href="${ytLink(b)}" target="_blank">▶ Video Bul</a></td>
+    </tr>`).join("");
     
     const card = document.createElement("div"); card.className = "card section";
     const fb = loadWeeklyFb()[`${m}-${w}-${d}`] || '';
-    const isCoach = window.location.pathname.includes('koc.html');
     const fbBlock = `<div class="feedback"><label>💬 Öğrenci Geri Bildirimi — ${day}</label><textarea id="fb_${m}_${w}_${d}" placeholder="${isCoach ? 'Öğrenci henüz yazmadı.' : 'Bugünkü plan hakkında yorumun...'}" ${isCoach ? 'readonly' : ''}>${fb}</textarea>${isCoach ? '' : `<div class="actions"><button class="secondary" onclick="saveFeedback(${m},${w},${d})">💾 Kaydet</button></div>`}</div>`;
     
     card.innerHTML = `<h2>🎯 ${day}</h2><div class="tablewrap"><table><thead><tr><th>Blok</th><th>Görev / Konu</th><th style="text-align:right;">Yardımcı</th></tr></thead><tbody>${trs}</tbody></table></div>${fbBlock}`;
     area.appendChild(card);
   });
+}
+
+// Haftalık Planı Düzenleme ve Kaydetme Fonksiyonu
+function toggleEditWeeklyPlan(m, w) {
+  const btn = document.getElementById('editWeekBtn');
+  
+  if (!isEditingWeek) {
+    // 1. DÜZENLEME MODUNA GEÇ
+    isEditingWeek = true;
+    btn.innerHTML = '💾 Değişiklikleri Kaydet';
+    btn.className = 'primary'; // Butonu mavi (dikkat çekici) yap
+    
+    // Tablodaki her görevi textarea'ya dönüştür
+    document.querySelectorAll('.task-cell').forEach(cell => {
+      const currentText = cell.innerText;
+      cell.innerHTML = `<textarea class="edit-task-input" style="width:100%; min-height:45px; font-family:inherit; padding:8px; border: 1px solid #dfe5ee; border-radius:8px;">${currentText}</textarea>`;
+    });
+  } else {
+    // 2. KAYDETME MODUNA GEÇ
+    btn.innerHTML = '⏳ Kaydediliyor...';
+    btn.disabled = true;
+    const newPlan = {};
+    
+    // Güvenlik için 7 günü de boş bir şekilde hazırla
+    DAYS.forEach(day => {
+      newPlan[day] = ["", "", "", ""];
+    });
+
+    // Sayfadaki textarea kutularındaki yeni verileri topla
+    document.querySelectorAll('.task-cell').forEach(cell => {
+      const day = cell.getAttribute('data-day');
+      const idx = cell.getAttribute('data-idx');
+      const input = cell.querySelector('.edit-task-input');
+      if (input && newPlan[day]) {
+        newPlan[day][idx] = input.value.trim() || "Serbest"; // Kutuyu boş bırakırsa Serbest yazsın
+      }
+    });
+
+    // Yeni planı Firebase'e yaz
+    dbRef(`weeklyPlans/${m}-${w}`).set(newPlan)
+      .then(() => {
+        toast('✅ Haftalık plan başarıyla güncellendi.');
+        // Firebase dinleyicimiz verinin değiştiğini algılayıp renderWeeklyPlan() fonksiyonunu otomatik çalıştıracak ve düzenleme modundan çıkacak.
+      })
+      .catch(() => {
+        toast('⚠️ Kaydedilemedi. İnternet bağlantını kontrol et.');
+        btn.innerHTML = '💾 Değişiklikleri Kaydet';
+        btn.disabled = false;
+      });
+  }
 }
 
 async function generateWeeklyPlanWithAI(m, w) {
