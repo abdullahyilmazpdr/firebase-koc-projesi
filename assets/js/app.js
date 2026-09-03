@@ -129,6 +129,54 @@ const CATALOG = {
 const MONTHS_META = [{label: "Eylül 2026"}, {label: "Ekim 2026"}, {label: "Kasım 2026"}, {label: "Aralık 2026"}, {label: "Ocak 2027"}, {label: "Şubat 2027"}, {label: "Mart 2027"}, {label: "Nisan 2027"}, {label: "Mayıs 2027"}, {label: "Haziran 2027"}];
 const TEACH_MONTHS = 8; 
 
+// 2026-2027 Eğitim Öğretim Yılı Başlangıcı: 31 Ağustos 2026 Pazartesi
+const ACADEMIC_START = new Date(2026, 7, 31); // Aylar 0'dan başlar (7 = Ağustos)
+
+function getWeekDateRange(m, w) {
+  // Ay (0-9) ve Hafta (1-4) indeksine göre haftanın başlangıç ve bitiş tarihini hesaplar
+  const weekOffset = (m * 4) + (w - 1);
+  const start = new Date(ACADEMIC_START);
+  start.setDate(start.getDate() + (weekOffset * 7));
+  
+  const end = new Date(start);
+  end.setDate(end.getDate() + 6);
+
+  const formatDate = (d) => {
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    return `${dd}.${mm}.${yyyy}`;
+  };
+
+  return `${formatDate(start)} - ${formatDate(end)}`;
+}
+
+// Hafta Seçici (Dropdown) içeriklerini tarihlerle güncelleyen fonksiyon
+function updateWeekOptions(mId, wId) {
+  const mSel = document.getElementById(mId);
+  const wSel = document.getElementById(wId);
+  if (!mSel || !wSel) return;
+  
+  const m = Number(mSel.value);
+  const oldVal = wSel.value || "1"; // Mevcut seçimi koru
+  wSel.innerHTML = "";
+  for (let w = 1; w <= 4; w++) {
+    wSel.innerHTML += `<option value="${w}">${w}. Hafta (${getWeekDateRange(m, w)})</option>`;
+  }
+  wSel.value = oldVal;
+}
+
+// Tarayıcı saatine göre bugünü otomatik bulan fonksiyon
+function autoSelectCurrentDay() {
+  const dSel = document.getElementById('dailyDaySel');
+  if (!dSel) return;
+  
+  // JavaScript'te haftanın günleri: 0=Pazar, 1=Pazartesi ... 6=Cumartesi
+  const daysMap = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
+  const currentDayName = daysMap[new Date().getDay()];
+  dSel.value = currentDayName;
+}
+
 function scheduleBranch(key) {
   const b = CATALOG[key];
   const tytQ = b.tyt.slice(), aytQ = b.ayt.slice();
@@ -361,12 +409,23 @@ async function generateWeeklyPlanWithAI(m, w) {
 function fillWeekSel() {
   const sel = document.getElementById("weekSel");
   const dailySel = document.getElementById("dailyMonthSel");
+  if (sel) sel.innerHTML = "";
+  if (dailySel) dailySel.innerHTML = "";
+
   MONTHS_META.forEach((mm, i) => {
     if (sel) sel.innerHTML += `<option value="${i}">${mm.label}</option>`;
     if (dailySel) dailySel.innerHTML += `<option value="${i}">${mm.label}</option>`;
   });
+  
   if (sel) sel.value = "0";
   if (dailySel) dailySel.value = "0";
+
+  // Hafta dropdown'larını yeni hesaplanan tarihlerle doldur
+  updateWeekOptions('weekSel', 'subWeekSel');
+  updateWeekOptions('dailyMonthSel', 'dailyWeekSel');
+  
+  // Günlük plan sekmesi için bugünü otomatik seç
+  autoSelectCurrentDay();
 }
 
 let profileCache = {}, journalCache = [], examsCache = [], weeklyFbCache = {}, messagesCache = [], weeklyPlansCache = {}, dailyProgressCache = {};
