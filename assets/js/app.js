@@ -233,56 +233,129 @@ function monthTopics(key, level, m) {
   const b = CATALOG[key]; const list = level === "tyt" ? b.tyt : b.ayt;
   return list.filter(t => SCHEDULE[key][t.id] === m);
 }
-function repeatToLength(arr, n) {
-  if (!arr.length) return [];
-  const out = []; for (let i = 0; i < n; i++)out.push(arr[i % arr.length]); return out;
-}
 
-function buildWeekly(m) {
-  const area = document.getElementById("weekArea"); 
-  if (!area) return;
-  area.innerHTML = "";
-  const mm = MONTHS_META[m];
+/* ================= DİNAMİK VE YAPAY ZEKA DESTEKLİ HAFTALIK PLAN ================= */
+function renderWeeklyPlan() {
+  const mSel = document.getElementById('weekSel');
+  const wSel = document.getElementById('subWeekSel');
+  const area = document.getElementById("weekArea");
+  if (!area || !mSel || !wSel) return;
+
+  const m = Number(mSel.value);
+  const w = Number(wSel.value);
+  const planKey = `${m}-${w}`;
+  const planData = weeklyPlansCache[planKey];
+
   if (m >= TEACH_MONTHS) {
-    area.innerHTML = `<div class="notice"><b>📅 ${mm.label}</b><br>Bu ay yeni konu işlenmiyor: tam kapsamlı TYT+AYT tekrarı ve haftada 2-3 tam deneme dönemi.</div>`;
+    area.innerHTML = `<div class="notice"><b>📅 ${MONTHS_META[m].label}</b><br>Bu ay yeni konu işlenmiyor: tam kapsamlı TYT+AYT tekrarı ve deneme dönemi.</div>`;
     return;
   }
-  const mathTyt = monthTopics("matematik", "tyt", m);
-  const geoTyt = monthTopics("geometri", "tyt", m);
-  const track1 = mathTyt.length ? mathTyt.map(t => ({label: "TYT Matematik", topic: t})) : geoTyt.map(t => ({label: "TYT Geometri", topic: t}));
-  const track1x7 = repeatToLength(track1, 7);
-  
-  const turkceTyt = monthTopics("turkce", "tyt", m);
-  const track2x7 = repeatToLength(turkceTyt.length ? turkceTyt : [{name: "Genel Tekrar", w: 1}], 7);
-  
-  const mathAyt = monthTopics("matematik", "ayt", m);
-  const fallbackMath = mathTyt.length > 1 ? mathTyt.slice(1) : geoTyt;
-  const track3 = mathAyt.length ? mathAyt.map(t => ({label: "AYT Matematik", topic: t, ayt: true})) : fallbackMath.map(t => ({label: mathTyt.length > 1 ? "TYT Matematik" : "TYT Geometri", topic: t}));
-  const track3x7 = repeatToLength(track3.length ? track3 : [{label: "AYT Matematik", topic: {name: "Genel Tekrar", w: 1}}], 7);
-  
-  const fenByDay = [];
-  for (let d = 0; d < 7; d++) {
-    const branch = FEN_BRANCHES[d % 3];
-    const b = CATALOG[branch];
-    const tytT = monthTopics(branch, "tyt", m), aytT = monthTopics(branch, "ayt", m);
-    const pool = tytT.length ? tytT.map(t => ({label: b.tytLabel, topic: t})) : aytT.map(t => ({label: b.aytLabel, topic: t, ayt: true}));
-    fenByDay.push(pool.length ? pool[Math.floor(d / 3) % pool.length] : {label: b.tytLabel, topic: {name: "Genel Tekrar", w: 1}});
+
+  // Eğer veritabanında o hafta için plan yoksa:
+  if (!planData) {
+    const isCoach = window.location.pathname.includes('koc.html');
+    if (isCoach) {
+      area.innerHTML = `
+        <div class="card section" style="text-align:center; padding: 40px 20px;">
+          <p class="muted">Bu hafta için henüz bir program oluşturulmamış.</p>
+          <button class="aibtn" onclick="generateWeeklyPlanWithAI(${m},${w})" style="padding:12px 24px; font-size:15px; border-radius:10px; font-weight:bold;">
+            🤖 Yapay Zeka İle ${w}. Haftayı Planla
+          </button>
+          <p id="aiPlanStatus" class="muted" style="margin-top:15px;"></p>
+        </div>`;
+    } else {
+      area.innerHTML = `<div class="card section"><p class="muted">Koçunuz ${MONTHS_META[m].label} -${w}. Hafta için henüz bir program oluşturmadı.</p></div>`;
+    }
+    return;
   }
-  
+
+  // Eğer plan varsa ekrana bas
+  area.innerHTML = "";
   DAYS.forEach((day, d) => {
-    const rows = [];
-    const s1 = track1x7[d]; if (s1) rows.push(["1. Saat", s1.label, s1.topic.name, `${weightTag(s1.topic.w)} • soru çözümü`]);
-    const t2 = track2x7[d]; rows.push(["2. Saat", "TYT Türkçe", t2.name, `${weightTag(t2.w)} • soru çözümü`]);
-    const s3 = track3x7[d]; if (s3) rows.push(["3. Saat", s3.label, s3.topic.name + (s3.ayt ? " (ön koşul karşılandı)" : ""), `${weightTag(s3.topic.w)} • soru çözümü`]);
-    const s4 = fenByDay[d]; rows.push(["4. Saat", s4.label, s4.topic.name, `${weightTag(s4.topic.w)} • video + soru çözümü`]);
-    const trs = rows.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td><td><b>${r[2]}</b></td><td>${r[3]}</td><td><a href="${ytLink(r[2])}" target="_blank">▶ YouTube Ders</a></td></tr>`).join("");
+    const blocks = planData[day] || ["Serbest", "Serbest", "Serbest", "Serbest"];
+    const trs = blocks.map((b, i) => `<tr><td>${i+1}. Saat</td><td><b>${b}</b></td><td style="text-align:right;"><a class="btnlink secondary" href="${ytLink(b)}" target="_blank">▶ Video Bul</a></td></tr>`).join("");
+    
     const card = document.createElement("div"); card.className = "card section";
-    const fb = loadWeeklyFb()[m + '-' + d] || '';
-    const isCoach = window.location.pathname.includes('koc.html'); // Hangi sayfada olduğumuzu URL'den anlıyoruz
-    const fbBlock = `<div class="feedback"><label>💬 Öğrenci Geri Bildirimi — ${day}</label><textarea id="fb_${m}_${d}" placeholder="${isCoach ? 'Öğrenci henüz yazmadı.' : 'Bugünkü plan hakkında yorumun...'}" ${isCoach ? 'readonly' : ''}>${fb}</textarea>${isCoach ? '' : `<div class="actions"><button class="secondary" onclick="saveFeedback(${m},${d})">💾 Kaydet</button></div>`}</div>`;
-    card.innerHTML = `<h2>🎯 ${day}</h2><div class="tablewrap"><table><thead><tr><th>Saat</th><th>Ders</th><th>Müfredat Konusu</th><th>Hedef</th><th>Video</th></tr></thead><tbody>${trs}</tbody></table></div>${fbBlock}`;
+    const fb = loadWeeklyFb()[`${m}-${w}-${d}`] || '';
+    const isCoach = window.location.pathname.includes('koc.html');
+    const fbBlock = `<div class="feedback"><label>💬 Öğrenci Geri Bildirimi — ${day}</label><textarea id="fb_${m}_${w}_${d}" placeholder="${isCoach ? 'Öğrenci henüz yazmadı.' : 'Bugünkü plan hakkında yorumun...'}" ${isCoach ? 'readonly' : ''}>${fb}</textarea>${isCoach ? '' : `<div class="actions"><button class="secondary" onclick="saveFeedback(${m},${w},${d})">💾 Kaydet</button></div>`}</div>`;
+    
+    card.innerHTML = `<h2>🎯 ${day}</h2><div class="tablewrap"><table><thead><tr><th>Blok</th><th>Görev / Konu</th><th style="text-align:right;">Yardımcı</th></tr></thead><tbody>${trs}</tbody></table></div>${fbBlock}`;
     area.appendChild(card);
   });
+}
+
+async function generateWeeklyPlanWithAI(m, w) {
+  const status = document.getElementById('aiPlanStatus');
+  if (!status) return;
+  
+  status.textContent = `🤖 Yapay Zeka öğrenci eksiklerini analiz edip ${w}. hafta programını yazıyor (Ortalama 15 saniye sürer)...`;
+
+  try {
+    // Öğrencinin son denemesinden yanlış yaptığı / eksik olduğu konuları toparla
+    let eksikler = [];
+    if (examsCache.length > 0 && examsCache[0].details) {
+      Object.entries(examsCache[0].details).forEach(([k, v]) => {
+        if (v.y > 0 || v.n < 10) eksikler.push(`${k} (Yanlış/Eksik)`);
+      });
+    }
+    const eksikMetni = eksikler.length ? eksikler.join(', ') : 'Belirgin bir eksik yok, doğrudan sıradaki müfredata odaklan.';
+
+    // Bu ay plana alınan konuları toparla
+    const ayKonulari = [];
+    BRANCH_ORDER.forEach(k => {
+      const b = CATALOG[k];
+      const tT = b.tyt.filter(t => SCHEDULE[k][t.id] === m).map(t => t.name);
+      const aT = b.ayt ? b.ayt.filter(t => SCHEDULE[k][t.id] === m).map(t => t.name) : [];
+      if (tT.length) ayKonulari.push(`TYT ${b.tytLabel.split(' ')[1]}:${tT.join(', ')}`);
+      if (aT.length) ayKonulari.push(`AYT ${b.aytLabel.split(' ')[1]}:${aT.join(', ')}`);
+    });
+    const mufredatMetni = ayKonulari.length ? ayKonulari.join(' | ') : 'Sadece genel tekrar ve deneme.';
+
+    // Gemini API'ye gidecek Prompt (Kesinlikle JSON dönmesi için şartlandırıldı)
+    const prompt = `Sen profesyonel bir YKS koçusun. Öğrenci için ${MONTHS_META[m].label} ayının ${w}. haftası için 7 günlük detaylı ders çalışma programı hazırlayacaksın.
+    Her gün için tam 4 adet 60 dakikalık çalışma bloku planlanmalı.
+
+    Öğrenci Hedefi: ${profileCache.hedef || 'Sayısal'}
+    Bu Ayın Müfredatı: ${mufredatMetni}
+    Öğrencinin Zayıf Olduğu Alanlar: ${eksikMetni}
+
+    Görev: Zayıf alanlara ağırlık vererek ve müfredatı eriterek 7 günlük bir plan oluştur.
+    DİKKAT: Çıktın SADECE VE SADECE aşağıdaki JSON formatında olmalıdır. Hiçbir giriş cümlesi, açıklama veya markdown (```json) etiketi KULLANMA. Doğrudan JSON nesnesini ver:
+    {
+      "Pazartesi": ["1. blok açıklaması", "2. blok açıklaması", "3. blok açıklaması", "4. blok açıklaması"],
+      "Salı": ["...", "...", "...", "..."],
+      "Çarşamba": ["...", "...", "...", "..."],
+      "Perşembe": ["...", "...", "...", "..."],
+      "Cuma": ["...", "...", "...", "..."],
+      "Cumartesi": ["...", "...", "...", "..."],
+      "Pazar": ["...", "...", "...", "..."]
+    }`;
+
+    // Vercel üzerindeki kendi backend API'mize istek atıyoruz
+    const res = await fetch('/api/ai', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: prompt })
+    });
+
+    if (!res.ok) throw new Error('API Hatası');
+
+    const data = await res.json();
+    let txt = data.candidates[0].content.parts[0].text.trim();
+
+    // Yapay zeka fazladan markdown eklediyse temizleyip JSON'a çevir
+    txt = txt.replace(/```json/g, '').replace(/```/g, '').trim();
+    const planJSON = JSON.parse(txt);
+
+    // Başarıyla parse edildiyse Firebase'e kaydet (Kaydolduğunda renderWeeklyPlan otomatik tetiklenecek)
+    await dbRef(`weeklyPlans/${m}-${w}`).set(planJSON);
+    toast('✅ Yapay zeka haftalık planı başarıyla oluşturdu!');
+
+  } catch (e) {
+    console.error(e);
+    status.textContent = '⚠️ Plan oluşturulurken bir hata oluştu veya yapay zeka geçersiz format döndürdü. Tekrar dene.';
+  }
 }
 
 function fillWeekSel() {
@@ -292,7 +365,7 @@ function fillWeekSel() {
   sel.value = "0";
 }
 
-let profileCache = {}, journalCache = [], examsCache = [], weeklyFbCache = {}, messagesCache = [];
+let profileCache = {}, journalCache = [], examsCache = [], weeklyFbCache = {}, messagesCache = [], weeklyPlansCache = {};
 
 const TOPIC_SOURCE = {
   topics_tytTurkce: CATALOG.turkce.tyt,
@@ -384,6 +457,7 @@ function initializeFirebaseListeners() {
   dbRef('exams').on('value', snap => {examsCache = snapToList(snap); renderExams(); if (examsCache[0]) updateWeak(examsCache[0].details); renderCoachHome();});
   dbRef('weeklyFeedback').on('value', snap => {
     weeklyFbCache = snap.val() || {}; 
+    renderWeeklyPlan();
     const sel = document.getElementById('weekSel');
     buildWeekly(Number(sel ? sel.value : 0)); 
     renderCoachHome();
@@ -437,10 +511,10 @@ function renderJournal() {
 }
 
 function loadWeeklyFb() {return weeklyFbCache || {}}
-function saveFeedback(m, d) {
-  const el = document.getElementById(`fb_${m}_${d}`);
+function saveFeedback(m, w, d) {
+  const el = document.getElementById(`fb_${m}_${w}_${d}`);
   if(!el) return;
-  dbRef('weeklyFeedback/' + m + '-' + d).set(el.value).then(() => toast('✅ Geri bildirimin kaydedildi.')).catch(() => toast('⚠️ Kaydedilemedi.'));
+  dbRef('weeklyFeedback/' + m + '-' + w + '-' + d).set(el.value).then(() => toast('✅ Geri bildirimin kaydedildi.')).catch(() => toast('⚠️ Kaydedilemedi.'));
 }
 
 /* ---- Koç Fonksiyonları ---- */
@@ -587,7 +661,5 @@ function updateWeakInto(details, tId, aId) {
 buildPlan(); 
 buildCur();
 fillWeekSel(); 
-const initialSel = document.getElementById('weekSel');
-buildWeekly(Number(initialSel ? initialSel.value : 0));
 fillTopicSelects();
 initializeFirebaseListeners();
