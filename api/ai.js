@@ -11,7 +11,7 @@ export default async function handler(req, res) {
   }
 
   // Yedekli model listesi (Sistem sırasıyla bunları deneyecek)
-  const models = ['gemini-3.6-pro', 'gemini-3.6-flash', 'gemini-3.5-pro', 'gemini-3.5-flash','gemini-3.6-flash-lite','gemini-3.5-flash-lite'];
+  const models = [ 'gemini-3.6-flash', 'gemini-3.5-pro', 'gemini-3.5-flash','gemini-3.6-flash-lite','gemini-3.5-flash-lite'];
   let lastError = null;
 
   for (const model of models) {
@@ -33,8 +33,8 @@ export default async function handler(req, res) {
         return res.status(200).json(data);
       }
 
-      // Eğer hata 503 (Yoğunluk), 429 (Kota) veya 500 (Sunucu) ise diğer modele geç
-      if (response.status === 503 || response.status === 429 || response.status === 500) {
+      // Eğer hata 503 (Yoğunluk), 429 (Kota), 500 (Sunucu) veya 404 (Model Bulunamadı) ise diğer modele geç
+      if (response.status === 503 || response.status === 429 || response.status === 500 || response.status === 404) {
         console.warn(`⚠️ ${model} başarısız oldu (${response.status}). Diğer modele geçiliyor...`);
         lastError = data.error?.message || 'Geçici yoğunluk';
         continue; // Döngüye devam et, sıradaki modeli dene
