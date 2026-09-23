@@ -53,6 +53,6 @@ export default async function handler(req, res) {
   // Tüm modeller denendi ve hepsi çöktüyse frontend'e kibar bir uyarı gönder
   return res.status(503).json({ 
     error: 'TUM_MODELLER_MESGUL', 
-    details: `Yapay zeka sunucularında geçici bir yoğunluk var. Lütfen 1-2 dakika sonra tekrar dene.` 
+    details: `Yapay zeka sunucularında geçici bir yoğunluk var. Lütfen 1-2 dakika sonra tekrar dene..` 
   });
 }
