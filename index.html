@@ -57,12 +57,7 @@
             <div class="welcome-text">Başaracağına inanıyorum. 💪🎯</div>
           </div>
         </div>
-        <div class="cards">
-          <div class="card stat"><small>Hedef Sıralama</small><strong class="blue">30.000</strong><small>Eczacılık</small></div>
-          <div class="card stat"><small>Başlangıç TYT</small><strong class="green">50</strong><small>net</small></div>
-          <div class="card stat"><small>Başlangıç AYT</small><strong class="orange">30</strong><small>net</small></div>
-          <div class="card stat"><small>Günlük Çalışma</small><strong>4 saat</strong><small>net çalışma</small></div>
-        </div>
+        <div id="studentStatsArea" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:15px; margin-bottom:20px;"></div>
         <div class="section card">
           <h2>🔗 TYT → AYT Konu Köprüsü</h2>
           <p><b>Temel Kavramlar programdan kaldırıldı.</b> Kağan bu konuyu tamamlamış kabul edildi.</p>
@@ -250,6 +245,26 @@
       </section>
     </main>
   </div>
+  <!-- Hedef Düzenleme Modalı -->
+<div id="targetModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(16,24,39,0.7); z-index:999; align-items:center; justify-content:center;">
+  <div class="card" style="width:90%; max-width:400px; padding:25px; box-shadow: 0 20px 40px rgba(0,0,0,0.2);">
+    <h3 style="margin-top:0; color:#245bb5;">🎯 Hedefleri Güncelle</h3>
+    <p class="muted" style="margin-bottom:15px; font-size:13px;">Değişikliklerin geçerli olması için koçunun onayı gerekmektedir.</p>
+    
+    <label style="display:block; margin-bottom:10px;">Hedef Sıralama <input type="text" id="mHedef" placeholder="Örn: 30.000" style="width:100%; padding:10px; margin-top:5px; border:1px solid #dfe5ee; border-radius:8px;"></label>
+    <label style="display:block; margin-bottom:10px;">Hedef Bölüm <input type="text" id="mBolum" placeholder="Örn: Eczacılık" style="width:100%; padding:10px; margin-top:5px; border:1px solid #dfe5ee; border-radius:8px;"></label>
+    <div style="display:flex; gap:10px; margin-bottom:10px;">
+      <label style="flex:1">TYT Hedefi <input type="number" id="mHedefTyt" placeholder="Örn: 80" style="width:100%; padding:10px; margin-top:5px; border:1px solid #dfe5ee; border-radius:8px;"></label>
+      <label style="flex:1">AYT Hedefi <input type="number" id="mHedefAyt" placeholder="Örn: 50" style="width:100%; padding:10px; margin-top:5px; border:1px solid #dfe5ee; border-radius:8px;"></label>
+    </div>
+    <label style="display:block; margin-bottom:15px;">Günlük Çalışma (Saat) <input type="number" id="mSaat" placeholder="Örn: 5" style="width:100%; padding:10px; margin-top:5px; border:1px solid #dfe5ee; border-radius:8px;"></label>
+    
+    <div style="display:flex; gap:10px;">
+       <button class="primary" style="flex:1; padding:12px; border-radius:8px;" onclick="submitNewTargets()">Onaya Gönder</button>
+       <button class="secondary" style="flex:1; padding:12px; border-radius:8px;" onclick="document.getElementById('targetModal').style.display='none'">İptal</button>
+    </div>
+  </div>
+</div>
   <div id="toast" class="toast"></div>
 
   <!-- 4. Ortak JavaScript Dosyası -->
