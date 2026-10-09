@@ -14,6 +14,7 @@
 
   <!-- 3. Firebase Ayar Dosyası -->
   <script src="assets/js/firebase-config.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 </head>
 
 <body>
@@ -44,6 +45,7 @@
         <div style="display:flex;align-items:center;gap:12px">
           <!-- Rol değiştirici butonlar kaldırıldı, sadece profil bırakıldı -->
           <div class="profile"><span class="avatar">Ş</span>Şükrü Kağan Avar</div>
+          <button class="secondary" onclick="logout()" style="padding: 6px 12px; border-radius: 9px; border: 1px solid #dfe5ee; background: #fff; cursor:pointer;">🚪 Çıkış Yap</button>
         </div>
       </header>
 
