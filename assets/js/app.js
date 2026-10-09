@@ -474,6 +474,44 @@ async function generateWeeklyPlanWithAI(m, w) {
   }
 }
 
+function autoSelectCurrentDate() {
+  const now = new Date(); // Şu anki sistem tarihi
+  const diffTime = now - ACADEMIC_START;
+  
+  let m = 0; let w = 1;
+  
+  if (diffTime > 0) {
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)); 
+    const currentWeekIndex = Math.floor(diffDays / 7); // 0'dan başlar
+    m = Math.floor(currentWeekIndex / 4); // Ay (0-9)
+    if (m > 9) m = 9; // 10. ayı geçmesin
+    w = (currentWeekIndex % 4) + 1; // Hafta (1-4)
+  }
+
+  const daysMap = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
+  const currentDayName = daysMap[now.getDay()];
+
+  // Haftalık Plan (Öğrenci & Koç) Dropdown'ları
+  const mSel = document.getElementById('weekSel');
+  const wSel = document.getElementById('subWeekSel');
+  if (mSel && wSel) {
+    mSel.value = m;
+    updateWeekOptions('weekSel', 'subWeekSel');
+    wSel.value = w;
+  }
+
+  // Günlük Plan Dropdown'ları
+  const dMsel = document.getElementById('dailyMonthSel');
+  const dWsel = document.getElementById('dailyWeekSel');
+  const dDsel = document.getElementById('dailyDaySel');
+  if (dMsel && dWsel && dDsel) {
+    dMsel.value = m;
+    updateWeekOptions('dailyMonthSel', 'dailyWeekSel');
+    dWsel.value = w;
+    dDsel.value = currentDayName;
+  }
+}
+
 function fillWeekSel() {
   const sel = document.getElementById("weekSel");
   const dailySel = document.getElementById("dailyMonthSel");
@@ -485,17 +523,9 @@ function fillWeekSel() {
     if (dailySel) dailySel.innerHTML += `<option value="${i}">${mm.label}</option>`;
   });
   
-  if (sel) sel.value = "0";
-  if (dailySel) dailySel.value = "0";
-
-  // Hafta dropdown'larını yeni hesaplanan tarihlerle doldur
-  updateWeekOptions('weekSel', 'subWeekSel');
-  updateWeekOptions('dailyMonthSel', 'dailyWeekSel');
-  
-  // Günlük plan sekmesi için bugünü otomatik seç
-  autoSelectCurrentDay();
+  // Tarihleri hesapla ve dropdownları bugüne ayarla
+  autoSelectCurrentDate();
 }
-
 let profileCache = {}, journalCache = [], examsCache = [], weeklyFbCache = {}, messagesCache = [], weeklyPlansCache = {}, dailyProgressCache = {};
 
 const TOPIC_SOURCE = {
