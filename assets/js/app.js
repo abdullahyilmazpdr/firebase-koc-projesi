@@ -881,9 +881,37 @@ function toggleDailyTask(m, w, day, idx, isChecked) {
     .catch(() => toast('⚠️ Kaydedilemedi. İnternet bağlantını kontrol et.'));
 }
 
-/* ================= İLK YÜKLEME ÇAĞRILARI ================= */
-buildPlan(); 
-buildCur();
-fillWeekSel(); 
-fillTopicSelects();
-initializeFirebaseListeners();
+/* ================= KİMLİK DOĞRULAMA VE İLK YÜKLEME ================= */
+function logout() {
+  firebase.auth().signOut();
+}
+
+// Uygulama her açıldığında veya sayfa yenilendiğinde kullanıcının giriş durumunu kontrol et
+firebase.auth().onAuthStateChanged((user) => {
+  const isLoginPage = window.location.pathname.includes('login.html');
+  
+  if (user) {
+    // 1. KULLANICI GİRİŞ YAPMIŞSA
+    if (isLoginPage) {
+      // Eğer login sayfasındaysa ve giriş başarılıysa yetkisine göre panele fırlat
+      if (user.email === 'ismailavar78@gmail.com') {
+        window.location.href = 'koc.html';
+      } else {
+        window.location.href = 'index.html';
+      }
+    } else {
+      // Zaten doğru paneldeyse verileri yüklemeye başla
+      buildPlan(); 
+      buildCur();
+      fillWeekSel(); 
+      fillTopicSelects();
+      initializeFirebaseListeners();
+    }
+  } else {
+    // 2. KULLANICI GİRİŞ YAPMAMIŞSA
+    if (!isLoginPage) {
+      // Giriş yapmadan index veya koc sayfasına girmeye çalışıyorsa login'e şutla
+      window.location.href = 'login.html';
+    }
+  }
+});
