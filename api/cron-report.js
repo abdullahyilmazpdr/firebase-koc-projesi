@@ -78,7 +78,7 @@ export default async function handler(req, res) {
       2. Yeni haftanın planı yapılmadan önce, koça stratejik ipuçları ve önermesi gereken 3 aksiyon maddesi.
       Format: Sadece HTML etiketleri (<h1>, <p>, <ul>, <li> vb.) kullanarak, renkli ve vurgulu şekilde gönder.`;
 
-      const aiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
+      const aiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${API_KEY}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
