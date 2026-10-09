@@ -94,7 +94,7 @@ export default async function handler(req, res) {
     // E-Postayı Gönder
     await transporter.sendMail({
       from: `"YKS Koçum" <${process.env.GMAIL_USER}>`,
-      to: process.env.GMAIL_USER, // Raporlar koçun kendisine gider
+      to: "ismailavar78@gmail.com", // Alıcı e-posta adresini buraya sabitledik
       subject: mailSubject,
       html: mailHTML
     });
