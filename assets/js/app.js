@@ -527,7 +527,6 @@ function fillWeekSel() {
   // Tarihleri hesapla ve dropdownları bugüne ayarla
   autoSelectCurrentDate();
 }
-let profileCache = {}, journalCache = [], examsCache = [], weeklyFbCache = {}, messagesCache = [], weeklyPlansCache = {}, dailyProgressCache = {};
 
 const TOPIC_SOURCE = {
   topics_tytTurkce: CATALOG.turkce.tyt,
