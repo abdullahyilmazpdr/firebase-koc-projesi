@@ -613,17 +613,19 @@ function snapToList(snap) {
 }
 
 function initializeFirebaseListeners() {
-  // 1. MEVCUT PROFİL DİNLEYİCİSİ (DÜZELTİLDİ)
+// 1. MEVCUT PROFİL DİNLEYİCİSİ
   dbRef('profile').on('value', snap => {
     profileCache = snap.val() || {}; 
     fillProfileForm(); 
     renderCoachHome();
+    renderStudentStats(); // Eklendi
   });
   
-  // 2. ONAY BEKLEYEN PROFİL DİNLEYİCİSİ (YENİ EKLENDİ)
+  // 2. ONAY BEKLEYEN PROFİL DİNLEYİCİSİ
   dbRef('pendingProfile').on('value', snap => {
     pendingProfileCache = snap.val();
     renderCoachHome(); 
+    renderStudentStats(); // Eklendi
   });
   
   dbRef('journal').on('value', snap => {
@@ -719,6 +721,63 @@ function saveFeedback(m, w, d) {
   const el = document.getElementById(`fb_${m}_${w}_${d}`);
   if(!el) return;
   dbRef('weeklyFeedback/' + m + '-' + w + '-' + d).set(el.value).then(() => toast('✅ Geri bildirimin kaydedildi.')).catch(() => toast('⚠️ Kaydedilemedi.'));
+}
+
+/* ================= ÖĞRENCİ HEDEF & ONAY YÖNETİMİ ================= */
+function renderStudentStats() {
+  const el = document.getElementById('studentStatsArea');
+  if(!el) return;
+  const p = loadProfile();
+  const isPending = pendingProfileCache !== null;
+
+  el.innerHTML = `
+    <div class="card stat" style="position:relative; background: ${isPending ? '#fffcf5' : '#fff'};">
+      <button onclick="openTargetModal()" style="position:absolute; top:12px; right:12px; background:none; border:none; cursor:pointer; font-size:18px; transition:0.2s;" title="Hedefleri Düzenle">✏️</button>
+      <small>Hedef Sıralama</small><strong class="blue">${p.hedef || '-'}</strong><small>${p.bolum || ''}</small>
+    </div>
+    <div class="card stat" style="background: ${isPending ? '#fffcf5' : '#fff'};"><small>Hedef TYT Neti</small><strong class="green">${p.hedefTyt || '-'}</strong><small>net</small></div>
+    <div class="card stat" style="background: ${isPending ? '#fffcf5' : '#fff'};"><small>Hedef AYT Neti</small><strong class="orange">${p.hedefAyt || '-'}</strong><small>net</small></div>
+    <div class="card stat" style="background: ${isPending ? '#fffcf5' : '#fff'};"><small>Günlük Çalışma</small><strong class="blue">${p.saat || '-'}</strong><small>saat</small></div>
+    ${isPending ? '<div style="grid-column: 1 / -1; background:#fff8ea; color:#e28b27; padding:12px; border-radius:10px; font-size:14px; border: 1px solid #f3e3b8; display:flex; align-items:center; gap:10px;">⏳ <b>Onay Bekleniyor:</b> Yeni hedeflerin koçuna iletildi. Onaylanana kadar sistemde eski hedeflerin görünmeye devam edecektir.</div>' : ''}
+  `;
+}
+
+function openTargetModal() {
+  const p = loadProfile();
+  document.getElementById('mHedef').value = p.hedef || '';
+  document.getElementById('mBolum').value = p.bolum || '';
+  document.getElementById('mHedefTyt').value = p.hedefTyt || '';
+  document.getElementById('mHedefAyt').value = p.hedefAyt || '';
+  document.getElementById('mSaat').value = p.saat || '';
+  document.getElementById('targetModal').style.display = 'flex';
+}
+
+function submitNewTargets() {
+  const p = loadProfile();
+  const newP = {
+    ...p,
+    hedef: document.getElementById('mHedef').value,
+    bolum: document.getElementById('mBolum').value,
+    hedefTyt: document.getElementById('mHedefTyt').value,
+    hedefAyt: document.getElementById('mHedefAyt').value,
+    saat: document.getElementById('mSaat').value,
+    updated: new Date().toISOString().slice(0, 10)
+  };
+  
+  const btn = document.querySelector('#targetModal .primary');
+  btn.innerHTML = "⏳ Gönderiliyor...";
+  btn.disabled = true;
+
+  dbRef('pendingProfile').set(newP).then(() => {
+    document.getElementById('targetModal').style.display = 'none';
+    toast('✅ Yeni hedefler koç onayına başarıyla gönderildi.');
+    btn.innerHTML = "Onaya Gönder";
+    btn.disabled = false;
+  }).catch(() => {
+    toast('⚠️ Hata oluştu.');
+    btn.innerHTML = "Onaya Gönder";
+    btn.disabled = false;
+  });
 }
 
 /* ---- Koç Fonksiyonları ---- */
@@ -827,7 +886,6 @@ function renderCoachHome() {
   const el = document.getElementById('coachProfileCard'); if (!el) return;
   const p = loadProfile();
   
-  // Bugünün ilerlemesini hesapla
   const now = new Date();
   const daysMap = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
   const todayName = daysMap[now.getDay()];
@@ -842,35 +900,50 @@ function renderCoachHome() {
   const completedCount = todayProgress.filter(Boolean).length;
   const percent = Math.round((completedCount / 4) * 100);
 
-  // Hedef sapma analizi
+  // 📋 GÜNÜN GÖREVLERİNİN DETAYLI LİSTESİ
+  const planData = weeklyPlansCache[`${m}-${w}`];
+  const todayTasks = planData && planData[todayName] ? planData[todayName] : ["Görev planlanmadı", "Görev planlanmadı", "Görev planlanmadı", "Görev planlanmadı"];
+  
+  let taskDetailsHtml = '<div style="margin-top:12px; font-size:12px; border-top:1px solid #f0f0f0; padding-top:10px; text-align:left;">';
+  todayTasks.forEach((task, idx) => {
+     const isDone = todayProgress[idx];
+     taskDetailsHtml += `<div style="margin-bottom:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; background:${isDone ? '#f2fbf3' : '#f8faff'}; padding:4px 8px; border-radius:6px; color:${isDone ? '#15966a' : '#40516b'};" title="${task}">
+       ${isDone ? '✅' : '⏳'} <span style="text-decoration:${isDone ? 'line-through' : 'none'};">${task}</span>
+     </div>`;
+  });
+  taskDetailsHtml += '</div>';
+
   let deviationAlert = '';
   if(percent < 50) {
-     deviationAlert = `<div style="color:#e28b27; font-size:12px; margin-top:5px;">⚠️ Günlük hedefin gerisinde</div>`;
+     deviationAlert = `<div style="color:#e28b27; font-size:12px; margin-top:8px; font-weight:bold;">⚠️ Hedefin gerisinde kalıyor</div>`;
   } else {
-     deviationAlert = `<div style="color:#15966a; font-size:12px; margin-top:5px;">✅ Hedefe uygun ilerliyor</div>`;
+     deviationAlert = `<div style="color:#15966a; font-size:12px; margin-top:8px; font-weight:bold;">✅ Planına uygun ilerliyor</div>`;
   }
 
-  // Onay Bekleyen Profil var mı?
   let pendingAlert = '';
   if (pendingProfileCache) {
     pendingAlert = `
       <div style="grid-column: span 4; background:#fff8ea; border:1px solid #f3e3b8; padding:15px; border-radius:12px; margin-bottom:15px;">
         <strong style="color:#e28b27;">⚠️ Öğrenci Hedef Güncellemesi İstiyor!</strong>
-        <p style="margin:5px 0 10px; font-size:13px;">Yeni Hedef: ${pendingProfileCache.hedef} Sıralama (${pendingProfileCache.bolum}) | Çalışma: ${pendingProfileCache.saat} saat</p>
+        <p style="margin:5px 0 10px; font-size:13px; line-height:1.6;">
+          <b>Hedef:</b> ${pendingProfileCache.hedef || '-'} Sıralama (${pendingProfileCache.bolum || '-'})<br>
+          <b>Net Hedefleri:</b> TYT: ${pendingProfileCache.hedefTyt || '-'} Net | AYT: ${pendingProfileCache.hedefAyt || '-'} Net<br>
+          <b>Çalışma:</b> ${pendingProfileCache.saat || '-'} saat/gün
+        </p>
         <div style="display:flex; gap:10px;">
-          <button class="primary" onclick="approveProfile()" style="padding:6px 12px; font-size:13px; border-radius:8px;">✅ Onayla</button>
+          <button class="primary" onclick="approveProfile()" style="padding:6px 12px; font-size:13px; border-radius:8px;">✅ Değişiklikleri Onayla</button>
           <button class="secondary" onclick="rejectProfile()" style="padding:6px 12px; font-size:13px; border-radius:8px;">❌ Reddet</button>
         </div>
       </div>
     `;
   }
 
-  // Kartları çiz
+  // Kartları Çiz
   el.innerHTML = pendingAlert + `
     <div class="card stat"><small>Hedef Sıralama</small><strong class="blue">${p.hedef || '-'}</strong><small>${p.bolum || ''}</small></div>
-    <div class="card stat"><small>Günlük Çalışma Hedefi</small><strong class="green">${p.saat || '-'}</strong><small>saat</small></div>
-    <div class="card stat"><small>Bugünkü İlerleme (${todayName})</small><strong class="${percent === 100 ? 'green' : 'orange'}">%${percent}</strong><small>${completedCount}/4 görev</small>${deviationAlert}</div>
-    <div class="card stat"><small>Motivasyon</small><strong class="orange">${p.mood || '-'}</strong><small>/10</small></div>`;
+    <div class="card stat"><small>Hedef TYT / AYT Neti</small><strong class="green">${p.hedefTyt || '-'} / ${p.hedefAyt || '-'}</strong><small>net</small></div>
+    <div class="card stat" style="grid-row: span 2;"><small>Bugünkü İlerleme (${todayName})</small><strong class="${percent === 100 ? 'green' : 'orange'}">%${percent}</strong><small>${completedCount}/4 görev</small>${deviationAlert}${taskDetailsHtml}</div>
+    <div class="card stat"><small>Günlük Çalışma</small><strong class="blue">${p.saat || '-'}</strong><small>saat</small></div>`;
   
   const coachJournalEl = document.getElementById('coachJournal');
   if (coachJournalEl) {
