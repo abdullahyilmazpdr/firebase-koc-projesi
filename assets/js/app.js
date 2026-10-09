@@ -614,11 +614,17 @@ function snapToList(snap) {
 }
 
 function initializeFirebaseListeners() {
+  // 1. MEVCUT PROFİL DİNLEYİCİSİ (DÜZELTİLDİ)
   dbRef('profile').on('value', snap => {
     profileCache = snap.val() || {}; 
     fillProfileForm(); 
-    pendingProfileCache = snap.val();
     renderCoachHome();
+  });
+  
+  // 2. ONAY BEKLEYEN PROFİL DİNLEYİCİSİ (YENİ EKLENDİ)
+  dbRef('pendingProfile').on('value', snap => {
+    pendingProfileCache = snap.val();
+    renderCoachHome(); 
   });
   
   dbRef('journal').on('value', snap => {
@@ -634,14 +640,12 @@ function initializeFirebaseListeners() {
     renderCoachHome();
   });
   
-  // ⚠️ İŞTE HATA VEREN KISIM BURASIYDI: buildWeekly yerine renderWeeklyPlan kullanıyoruz
   dbRef('weeklyFeedback').on('value', snap => {
     weeklyFbCache = snap.val() || {}; 
     renderWeeklyPlan(); 
     renderCoachHome();
   });
   
-  // 📅 YENİ EKLENEN HAFTALIK PLAN DİNLEYİCİSİ
   dbRef('weeklyPlans').on('value', snap => {
     weeklyPlansCache = snap.val() || {}; 
     renderWeeklyPlan(); 
@@ -653,10 +657,10 @@ function initializeFirebaseListeners() {
     renderInbox();
   });
    
- // Günlük görev ilerlemelerini dinleyen yapı
   dbRef('dailyProgress').on('value', snap => {
     dailyProgressCache = snap.val() || {}; 
     renderDailyPlan(); 
+    renderCoachHome(); // Koç panelindeki günlük ilerleme yüzdesinin anlık güncellenmesi için buraya da ekledik
   });
 }
 
