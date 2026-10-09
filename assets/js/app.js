@@ -967,6 +967,32 @@ function toggleDailyTask(m, w, day, idx, isChecked) {
     .catch(() => toast('⚠️ Kaydedilemedi. İnternet bağlantını kontrol et.'));
 }
 
+async function generateAIReport() {
+  const resEl = document.getElementById('aiReportResult');
+  resEl.innerHTML = "⏳ Yapay zeka öğrencinin tüm verilerini analiz ediyor...";
+  
+  try {
+    const p = loadProfile();
+    let progressText = "";
+    Object.entries(dailyProgressCache).slice(-7).forEach(([k, v]) => {
+       progressText += `${k} gününde 4 görevden ${v.filter(Boolean).length} tamamlandı. `;
+    });
+
+    const prompt = `Sen profesyonel bir YKS koçusun. Koçluk yaptığın öğrencinin son verileri şunlar:
+    Hedef: ${p.hedef || '?'} sıralama, Günlük çalışma: ${p.saat || '?'} saat.
+    Son Haftadaki Görev İlerlemesi: ${progressText || 'Veri girilmedi.'}
+    Son Deneme: ${examsCache[0] ? `TYT ${examsCache[0].tyt}, AYT${examsCache[0].ayt}` : 'Yok'}
+    
+    Bu verileri analiz ederek koça (bana) hitaben durum değerlendirmesi yap. Öğrenci hedefinden uzaklaşıyor mu? Koçluk görüşmesi için 3 adet stratejik öneri maddesi yaz. Format: HTML (Kalın yazılar için <b>).`;
+
+    const res = await fetch('/api/ai', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: prompt }) });
+    const data = await res.json();
+    resEl.innerHTML = `<div style="background:#fff; padding:15px; border-radius:10px; border:1px solid #e7d6ff;">${data.candidates[0].content.parts[0].text.replace(/\n/g, '<br>')}</div>`;
+  } catch (e) {
+    resEl.innerHTML = "⚠️ Rapor alınamadı.";
+  }
+}
+
 /* ================= KİMLİK DOĞRULAMA VE İLK YÜKLEME ================= */
 function logout() {
   firebase.auth().signOut();
