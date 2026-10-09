@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>YKS Koçum - Giriş Yap</title>
+  <link rel="stylesheet" href="assets/css/style.css">
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <script src="assets/js/firebase-config.js"></script>
+  <style>
+    body { display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+    .login-box { background: #fff; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px #1720331a; width: 100%; max-width: 400px; text-align: center; }
+    .login-box input { margin-bottom: 15px; padding: 12px; font-size: 15px; }
+    .login-box button { width: 100%; padding: 12px; font-size: 16px; border-radius: 9px; font-weight: bold; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <div class="login-box">
+    <div class="logo" style="margin-bottom:20px; color:#101827;">YKS <span style="color:#62d6a7;">KOÇUM</span></div>
+    <h2 style="margin-top:0;">Sisteme Giriş</h2>
+    <input type="email" id="email" placeholder="E-posta Adresi" required>
+    <input type="password" id="pass" placeholder="Şifre" required>
+    <button class="primary" onclick="signIn()">Giriş Yap</button>
+    <p id="errorMsg" style="color: red; font-size: 13px; margin-top: 15px;"></p>
+  </div>
+  
+  <script src="assets/js/app.js?v=3"></script>
+  <script>
+    function signIn() {
+      const e = document.getElementById('email').value;
+      const p = document.getElementById('pass').value;
+      const btn = document.querySelector('button');
+      btn.innerHTML = "Bekleyin..."; btn.disabled = true;
+      
+      firebase.auth().signInWithEmailAndPassword(e, p)
+        .catch(err => {
+          document.getElementById('errorMsg').innerText = "Hatalı e-posta veya şifre.";
+          btn.innerHTML = "Giriş Yap"; btn.disabled = false;
+        });
+    }
+  </script>
+</body>
+</html>
