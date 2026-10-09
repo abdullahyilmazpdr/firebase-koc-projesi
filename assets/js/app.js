@@ -823,14 +823,58 @@ function msgTag(t) {
 function renderCoachHome() {
   const el = document.getElementById('coachProfileCard'); if (!el) return;
   const p = loadProfile();
-  el.innerHTML = `
+  
+  // Bugünün ilerlemesini hesapla
+  const now = new Date();
+  const daysMap = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
+  const todayName = daysMap[now.getDay()];
+  
+  const diffTime = Math.max(0, now - ACADEMIC_START);
+  const currentWeekIndex = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 7));
+  const m = Math.min(9, Math.floor(currentWeekIndex / 4));
+  const w = (currentWeekIndex % 4) + 1;
+  
+  const progressKey = `${m}-${w}-${todayName}`;
+  const todayProgress = dailyProgressCache[progressKey] || [false, false, false, false];
+  const completedCount = todayProgress.filter(Boolean).length;
+  const percent = Math.round((completedCount / 4) * 100);
+
+  // Hedef sapma analizi
+  let deviationAlert = '';
+  if(percent < 50) {
+     deviationAlert = `<div style="color:#e28b27; font-size:12px; margin-top:5px;">⚠️ Günlük hedefin gerisinde</div>`;
+  } else {
+     deviationAlert = `<div style="color:#15966a; font-size:12px; margin-top:5px;">✅ Hedefe uygun ilerliyor</div>`;
+  }
+
+  // Onay Bekleyen Profil var mı?
+  let pendingAlert = '';
+  if (pendingProfileCache) {
+    pendingAlert = `
+      <div style="grid-column: span 4; background:#fff8ea; border:1px solid #f3e3b8; padding:15px; border-radius:12px; margin-bottom:15px;">
+        <strong style="color:#e28b27;">⚠️ Öğrenci Hedef Güncellemesi İstiyor!</strong>
+        <p style="margin:5px 0 10px; font-size:13px;">Yeni Hedef: ${pendingProfileCache.hedef} Sıralama (${pendingProfileCache.bolum}) | Çalışma: ${pendingProfileCache.saat} saat</p>
+        <div style="display:flex; gap:10px;">
+          <button class="primary" onclick="approveProfile()" style="padding:6px 12px; font-size:13px; border-radius:8px;">✅ Onayla</button>
+          <button class="secondary" onclick="rejectProfile()" style="padding:6px 12px; font-size:13px; border-radius:8px;">❌ Reddet</button>
+        </div>
+      </div>
+    `;
+  }
+
+  // Kartları çiz
+  el.innerHTML = pendingAlert + `
     <div class="card stat"><small>Hedef Sıralama</small><strong class="blue">${p.hedef || '-'}</strong><small>${p.bolum || ''}</small></div>
-    <div class="card stat"><small>Günlük Çalışma</small><strong class="green">${p.saat || '-'}</strong><small>saat</small></div>
-    <div class="card stat"><small>Motivasyon</small><strong class="orange">${p.mood || '-'}</strong><small>/10</small></div>
-    <div class="card stat"><small>Son Güncelleme</small><strong>${p.updated || '-'}</strong><small>durum bilgisi</small></div>`;
-  const j = journalCache.slice(0, 5);
+    <div class="card stat"><small>Günlük Çalışma Hedefi</small><strong class="green">${p.saat || '-'}</strong><small>saat</small></div>
+    <div class="card stat"><small>Bugünkü İlerleme (${todayName})</small><strong class="${percent === 100 ? 'green' : 'orange'}">%${percent}</strong><small>${completedCount}/4 görev</small>${deviationAlert}</div>
+    <div class="card stat"><small>Motivasyon</small><strong class="orange">${p.mood || '-'}</strong><small>/10</small></div>`;
+  
   const coachJournalEl = document.getElementById('coachJournal');
-  if (coachJournalEl) coachJournalEl.innerHTML = j.length ? j.map(e => `<div class="journal-entry"><div class="jdate">${e.date}</div>${e.text}</div>`).join('') : '<p class="muted">Öğrenci henüz not eklemedi.</p>';
+  if (coachJournalEl) {
+     const j = journalCache.slice(0, 5);
+     coachJournalEl.innerHTML = j.length ? j.map(e => `<div class="journal-entry"><div class="jdate">${e.date}</div>${e.text}</div>`).join('') : '<p class="muted">Öğrenci henüz not eklemedi.</p>';
+  }
+  
   const exams = examsCache.slice(0, 5);
   const cEl = document.getElementById('coachExams');
   if (cEl) {
@@ -842,9 +886,6 @@ function renderCoachHome() {
       updateWeakInto(exams[0].details, 'coachTytWeak', 'coachAytWeak');
     }
   }
-  const fb = loadWeeklyFb(); const entries = Object.entries(fb).filter(([k, v]) => v && v.trim()).slice(-5).reverse();
-  const cWeeklyFbEl = document.getElementById('coachWeeklyFb');
-  if (cWeeklyFbEl) cWeeklyFbEl.innerHTML = entries.length ? entries.map(([k, v]) => {const parts = k.split('-'); const m = parts[0], d = parts[1]; return `<div class="journal-entry"><div class="jdate">${MONTHS_META[m].label} • ${DAYS[d]}</div>${v}</div>`}).join('') : '<p class="muted">Henüz geri bildirim yok.</p>';
 }
 
 function updateWeakInto(details, tId, aId) {
