@@ -1002,30 +1002,39 @@ function logout() {
 }
 
 // Uygulama her açıldığında veya sayfa yenilendiğinde kullanıcının giriş durumunu kontrol et
+// Uygulama her açıldığında veya sayfa yenilendiğinde kullanıcının giriş durumunu kontrol et
 firebase.auth().onAuthStateChanged((user) => {
   const isLoginPage = window.location.pathname.includes('login.html');
+  const isCoachPage = window.location.pathname.includes('koc.html');
   
   if (user) {
-    // 1. KULLANICI GİRİŞ YAPMIŞSA
+    // KULLANICI GİRİŞ YAPMIŞSA yetkisini (Koç mu Öğrenci mi) belirle
+    const isCoach = user.email === 'ismailavar78@gmail.com'; // Koçun e-postası
+
     if (isLoginPage) {
-      // Eğer login sayfasındaysa ve giriş başarılıysa yetkisine göre panele fırlat
-      if (user.email === 'ismailavar78@gmail.com') {
-        window.location.href = 'koc.html';
-      } else {
-        window.location.href = 'index.html';
-      }
+      // Login sayfasındaysa yetkisine göre kendi paneline gönder
+      window.location.href = isCoach ? 'koc.html' : 'index.html';
     } else {
-      // Zaten doğru paneldeyse verileri yüklemeye başla
-      buildPlan(); 
-      buildCur();
-      fillWeekSel(); 
-      fillTopicSelects();
-      initializeFirebaseListeners();
+      // SAYFA YETKİ KONTROLÜ (GÜVENLİK DUVARI)
+      if (isCoach && !isCoachPage) {
+        // Koç, yanlışlıkla öğrenci sayfasına (index.html) girdiyse koç paneline geri at
+        window.location.href = 'koc.html';
+      } else if (!isCoach && isCoachPage) {
+        // Öğrenci, koç sayfasına (koc.html) girmeye çalışıyorsa kendi paneline geri at
+        window.location.href = 'index.html';
+      } else {
+        // Yetki doğruysa ve doğru sayfadaysa verileri yüklemeye başla
+        buildPlan(); 
+        buildCur();
+        fillWeekSel(); 
+        fillTopicSelects();
+        initializeFirebaseListeners();
+      }
     }
   } else {
-    // 2. KULLANICI GİRİŞ YAPMAMIŞSA
+    // KULLANICI GİRİŞ YAPMAMIŞSA
     if (!isLoginPage) {
-      // Giriş yapmadan index veya koc sayfasına girmeye çalışıyorsa login'e şutla
+      // Giriş yapmadan panellere girmeye çalışıyorsa login'e şutla
       window.location.href = 'login.html';
     }
   }
