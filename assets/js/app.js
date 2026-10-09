@@ -128,6 +128,7 @@ const CATALOG = {
 };
 const MONTHS_META = [{label: "Eylül 2026"}, {label: "Ekim 2026"}, {label: "Kasım 2026"}, {label: "Aralık 2026"}, {label: "Ocak 2027"}, {label: "Şubat 2027"}, {label: "Mart 2027"}, {label: "Nisan 2027"}, {label: "Mayıs 2027"}, {label: "Haziran 2027"}];
 const TEACH_MONTHS = 8; 
+let profileCache = {}, journalCache = [], examsCache = [], weeklyFbCache = {}, messagesCache = [], weeklyPlansCache = {}, dailyProgressCache = {}, pendingProfileCache = null;
 
 // 2026-2027 Eğitim Öğretim Yılı Başlangıcı: 31 Ağustos 2026 Pazartesi
 const ACADEMIC_START = new Date(2026, 7, 31); // Aylar 0'dan başlar (7 = Ağustos)
@@ -616,6 +617,7 @@ function initializeFirebaseListeners() {
   dbRef('profile').on('value', snap => {
     profileCache = snap.val() || {}; 
     fillProfileForm(); 
+    pendingProfileCache = snap.val();
     renderCoachHome();
   });
   
@@ -663,11 +665,24 @@ function loadProfile() {return profileCache || {}}
 function saveProfile() {
   const pfHedef = document.getElementById('pfHedef'), pfBolum = document.getElementById('pfBolum'), pfSaat = document.getElementById('pfSaat'), pfMood = document.getElementById('pfMood');
   if (!pfHedef) return;
-  const p = {
-    hedef: pfHedef.value, bolum: pfBolum.value,
-    saat: pfSaat.value, mood: pfMood.value, updated: new Date().toISOString().slice(0, 10)
-  };
-  dbRef('profile').set(p).then(() => toast('✅ Bilgilerin kaydedildi.')).catch(() => toast('⚠️ Kaydedilemedi, internet bağlantını kontrol et.'));
+  const p = { hedef: pfHedef.value, bolum: pfBolum.value, saat: pfSaat.value, mood: pfMood.value, updated: new Date().toISOString().slice(0, 10) };
+  
+  // PROFİLİ ONAYA GÖNDER
+  dbRef('pendingProfile').set(p).then(() => {
+    toast('⏳ Bilgilerin koçun onayına sunuldu.');
+  }).catch(() => toast('⚠️ Kaydedilemedi.'));
+}
+
+function approveProfile() {
+  if(!pendingProfileCache) return;
+  dbRef('profile').set(pendingProfileCache).then(() => {
+    dbRef('pendingProfile').remove();
+    toast('✅ Öğrencinin yeni hedefleri onaylandı.');
+  });
+}
+
+function rejectProfile() {
+  dbRef('pendingProfile').remove().then(() => toast('❌ Hedef güncellemesi reddedildi.'));
 }
 
 function fillProfileForm() {
